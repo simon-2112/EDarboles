@@ -1,321 +1,581 @@
-# clase BST para gestión de nodos
-class BstTree:
+import Queue
 
-    # constructor del árbol que se crea inicialmente con una raiz vacía
+
+class BstTree:
+    """
+    Binary Search Tree (BST) implementation without automatic balancing.
+
+    A Binary Search Tree is a data structure that maintains sorted data with efficient
+    insertion, deletion, and search operations. For every node, all values in the left
+    subtree are smaller and all values in the right subtree are larger.
+
+    This implementation maintains the BST property but does not perform self-balancing,
+    so in worst-case scenarios (like inserting sorted data), operations can degrade to
+    O(n) time complexity. For balanced insertion patterns, it provides O(log n) operations.
+
+    The tree uses a Node model with methods: getValue(), getLeftChild(), getRightChild(),
+    setLeftChild(), setRightChild(), and setParent().
+    """
+
     def __init__(self):
+        """
+        Initialize an empty Binary Search Tree.
+
+        Creates a new BST with no root node. The tree is ready to accept insertions.
+        """
         self.root = None
 
-    # Método para retornar la raiz del árbol
     def getRoot(self):
+        """
+        Get the root node of the tree.
+
+        Returns:
+            Node: The root node of the tree, or None if the tree is empty.
+        """
         return self.root
 
-    # método de insertar para verificar si no hay raíz
-    # cuando no hay raíz, se crea el nodo y se asigna como raiz
-    # cuando si hay raiz se procede a insertar llamando a la función privada con la raiz del árbol y el nodo a insertar
+
+    # ========================= INSERTION OPERATIONS =========================
+
     def insert(self, node):
-        # verificar si no hay raiz para asignar el nuevo como raiz
+        """
+        Insert a new node into the Binary Search Tree.
+
+        This method adds a new node to the tree while maintaining the BST property.
+        If a node with the same value already exists, a message is printed and the node
+        is not inserted (duplicates are rejected). If the tree is empty, the node becomes
+        the root. Otherwise, the insertion is delegated to the recursive helper method.
+
+        Args:
+            node (Node): The node to insert. The node's value is used to determine its position.
+
+        Time Complexity: O(log n) on average for balanced trees, O(n) in worst case (unbalanced trees).
+        """
+        # Check if tree is empty to assign the node as root
         if self.root is None:
             self.root = node
         else:
+            # Tree has a root, proceed with recursive insertion
             self.__insert(self.root, node)
 
-    # Método recursivo para insertar un nodo cuando se tiene raiz en el árbol
     def __insert(self, currentRoot, node):
-        if node.getValue() == currentRoot.getValue():
-            print(f"El valor del nodo {node.getValue()} ya existe en el árbol.")
-        else:
-            # se verifica si el valor a insertar es mayor que el actual raiz
-            if node.getValue() > currentRoot.getValue():
-                # se verifica si existe un hijo derecho
-                if currentRoot.getRightChild() is None:
-                    # si no tiene hijo derecho, se asigna el nodo como hijo derecho
-                    currentRoot.setRightChild(node)
-                    # y el nuevo nodo tendrá como padre a la actual raiz
-                    node.setParent(currentRoot)
-                else:
-                    # ya tiene hijo derecho, entonces se debe procesar la inserción desde el hijo derecho
-                    # haciendo el llamado recursivo con ese hijo
-                    self.__insert(currentRoot.getRightChild(), node)
-            else:
-                # el valor del nodo a insertar es menor que el valor de la actual raiz
-                # se verifica si tiene hijo izquierdo
-                if currentRoot.getLeftChild() is None:
-                    # si no tiene se asigna el nodo como hijo izquierdo
-                    currentRoot.setLeftChild(node)
-                    # y al nuevo nodo se le asigna como padre a la actual raiz
-                    node.setParent(currentRoot)
-                else:
-                    # si tiene hijo izquierdo, entonces se llama recursivamente por el hijo izquierdo con el nodo a insertar.
-                    self.__insert(currentRoot.getLeftChild(), node)
+        """
+        Recursively insert a node into the tree starting from a given node.
 
-    # Método que permita realizar la búsqueda de un nodo mediante su valor
-    # debe seguir la lógica de las reglas de un BST
-    def search(self, value):
-        # validar si existe una raíz en el árbol
-        if self.root is None:
-            raise Exception("El árbol no tiene una raíz.")
+        This private method handles the recursive insertion logic. It compares node values
+        to determine left or right placement and calls itself recursively on the appropriate
+        subtree. Duplicate values are not inserted into the tree.
+
+        Args:
+            currentRoot (Node): The current node in the recursion (subtree root).
+            node (Node): The node to insert.
+        """
+        if node.getValue() == currentRoot.getValue():
+            # Duplicate values are not inserted - maintain unique values in the tree
+            print(f"The value {node.getValue()} already exists in the tree.")
+        elif node.getValue() > currentRoot.getValue():
+            # Verify if right child exists
+            if currentRoot.getRightChild() is None:
+                # Right slot is empty, place the node here
+                currentRoot.setRightChild(node)
+                node.setParent(currentRoot)
+            else:
+                # Right child exists, recurse to insert further down
+                self.__insert(currentRoot.getRightChild(), node)
+        elif currentRoot.getLeftChild() is None:
+            # Left slot is empty, place the node here
+            currentRoot.setLeftChild(node)
+            node.setParent(currentRoot)
         else:
+            # Left child exists, recurse to insert further down
+            self.__insert(currentRoot.getLeftChild(), node)
+
+
+    # ========================= SEARCH OPERATIONS =============================
+
+    def search(self, value):
+        """
+        Search for a node with a given value in the tree.
+
+        This method performs a binary search starting from the root. It raises an exception
+        if the tree is empty, otherwise returns the node if found, or None if the value
+        does not exist in the tree.
+
+        Args:
+            value: The value to search for.
+
+        Returns:
+            Node: The node with the matching value, or None if not found.
+
+        Raises:
+            Exception: If the tree is empty (no root node exists).
+
+        Time Complexity: O(log n) on average, O(n) in worst case (unbalanced trees).
+        """
+        # Validate that the tree has a root
+        if self.root is None:
+            raise Exception("The tree has no root.")
+        else:
+            # Start recursive search from root
             return self.__search(self.root, value)
 
-    # función recursiva para atender la búsqueda
     def __search(self, currentRoot, value):
-        # validar si el valor buscado es igual a la raiz actual
-        # print(f"El valor del nodo es: {currentRoot.getValue()}")
-        # print(f"Comparación: {currentRoot.getValue() == value}" )
-        if currentRoot.getValue() == value:
-            # si es así se retorna la actual raiz
-            return currentRoot
-        # sino se valida si se debe ir por la derecha o por la izquierda
-        elif value > currentRoot.getValue():
-            # si es mayor, se verifica que exista un hijo derecho
-            # en caso de no existir se genera
-            if currentRoot.getRightChild() is None:
-                return None
-            else:
-                # se pasa la solicitud de búsqueda al hijo derecho
-                return self.__search(currentRoot.getRightChild(), value)
-        else:
-            # si es menor, se verifica que exista un hijo izquierdo
-            # en caso de no existir se genera
-            if currentRoot.getLeftChild() is None:
-                return None
-            else:
-                # se pasa la solicitud de búsqueda al hijo izquierdo
-                return self.__search(currentRoot.getLeftChild(), value)
+        """
+        Recursively search for a node with a given value in a subtree.
 
-    # Método para recorrido en anchura
-    def breadthFirstSearch(self):
-        # verificar si el árbol está vacío
-        if self.root is None:
-            print("El árbol está vacío.")
+        This private method performs binary search by comparing the target value with
+        the current node's value and recursing left or right accordingly.
+
+        Args:
+            currentRoot (Node): The current node in the search (subtree root).
+            value: The value to search for.
+
+        Returns:
+            Node: The node with the matching value, or None if not found in this subtree.
+        """
+        if currentRoot.getValue() == value:
+            # Found the target value
+            return currentRoot
+        elif value > currentRoot.getValue():
+            # Value is larger, search in the right subtree
+            if currentRoot.getRightChild() is None:
+                # No right child - value not found in this path
+                return None
+            else:
+                # Recurse into the right subtree
+                return self.__search(currentRoot.getRightChild(), value)
+        elif currentRoot.getLeftChild() is None:
+            # No left child - value not found in this path
+            return None
         else:
-            # se encola la raíz de primera
-            queue = [self.root]
-            # resultado del recorrido
+            # Recurse into the left subtree
+            return self.__search(currentRoot.getLeftChild(), value)
+
+
+    # ========================= TREE TRAVERSALS ================================
+
+    def breadthFirstSearch(self):
+        """
+        Perform a breadth-first search (level-order) traversal of the tree.
+
+        This method visits all nodes level by level from top to bottom, left to right.
+        It uses a queue data structure to process nodes in order. Prints a message if
+        the tree is empty.
+
+        Returns:
+            list: A list of node values in breadth-first order, or None if tree is empty.
+
+        Time Complexity: O(n) - Visits each node exactly once.
+        Space Complexity: O(w) - Where w is the maximum width (number of nodes) at any level.
+        """
+        # Check if the tree is empty
+        if self.root is None:
+            print("The tree is empty.")
+            return None
+        else:
+            # Initialize queue with root node
+            queue = Queue.Queue()
+            queue.enqueue(self.root)
             result = []
-            # mientras existan elementos en la cola (nodos)
-            # se debe procesar con: desencolar, imprimir y encolar hijos
-            while len(queue) > 0:
-                # desencolar
-                currentNode = queue.pop(0)
-                # imprimir que es agregar al resultado
+
+            # Process nodes level by level
+            while not queue.isEmpty():
+                # Dequeue current node
+                currentNode = queue.dequeue()
+                # Add node value to result
                 result.append(currentNode.getValue())
-                # se valida que tenga hijo derecho para encolarlo
+
+                # Enqueue left child if it exists
                 if currentNode.getLeftChild() is not None:
-                    queue.append(currentNode.getLeftChild())
-                # se valida que tenga hijo izquierdo para encolarlo
+                    queue.enqueue(currentNode.getLeftChild())
+                # Enqueue right child if it exists
                 if currentNode.getRightChild() is not None:
-                    queue.append(currentNode.getRightChild())
+                    queue.enqueue(currentNode.getRightChild())
+
             return result
 
-    # Método para realizar el recorrido en profundidad tipo  Pre-Order
     def preOrderTraversal(self):
-        # validar si el árbol está vacío y mostrar mensaje
+        """
+        Perform a pre-order traversal of the tree.
+
+        Pre-order traversal visits nodes in this order: Node -> Left subtree -> Right subtree.
+        This traversal is useful for creating a copy of the tree or evaluating expressions.
+        Prints a message if the tree is empty.
+
+        Returns:
+            list: A list of nodes in pre-order sequence, or None if tree is empty.
+
+        Time Complexity: O(n) - Visits each node exactly once.
+        """
+        # Check if the tree is empty
         if self.root is None:
-            print("El árbol está vacío.")
+            print("The tree is empty.")
+            return None
         else:
-            # si el árbol no está vacío, se genera un result que tendrá el recorrido al final
+            # Create result list for accumulating nodes
             result = []
-            # se inicia el llamado recursivo por la raiz del árbol
+            # Start recursive pre-order traversal from root
             self.__preOrderTraversal(self.root, result)
             return result
 
-    # Método recursivo para el recorrido Pre-Order
     def __preOrderTraversal(self, currentRoot, result):
-        # Se imprime (agrega a la cola) la raiz actual
+        """
+        Recursively perform pre-order traversal on a subtree.
+
+        Visit order: Current node -> Left subtree -> Right subtree
+
+        Args:
+            currentRoot (Node): The current node (subtree root) being visited.
+            result (list): The list to accumulate nodes in pre-order sequence.
+        """
+        # Process current node first
         result.append(currentRoot)
 
-        # se verifica si tiene hijo izquierdo para seguir el recorrido por él
+        # Then traverse left subtree if it exists
         if currentRoot.getLeftChild() is not None:
             self.__preOrderTraversal(currentRoot.getLeftChild(), result)
 
-        # se verifica si tiene hijo derecho para seguir el recorrido por él
+        # Finally traverse right subtree if it exists
         if currentRoot.getRightChild() is not None:
             self.__preOrderTraversal(currentRoot.getRightChild(), result)
 
-    # Método para realizar el recorrido en profundidad tipo  In-Order
     def inOrderTraversal(self):
-        # validar si el árbol está vacío y mostrar mensaje
+        """
+        Perform an in-order traversal of the tree.
+
+        In-order traversal visits nodes in this order: Left subtree -> Node -> Right subtree.
+        For a BST, this produces nodes in ascending order by value.
+        Prints a message if the tree is empty.
+
+        Returns:
+            list: A list of nodes in in-order sequence (sorted order), or None if tree is empty.
+
+        Time Complexity: O(n) - Visits each node exactly once.
+        """
+        # Check if the tree is empty
         if self.root is None:
-            print("El árbol está vacío.")
+            print("The tree is empty.")
+            return None
         else:
-            # si el árbol no está vacío, se genera un result que tendrá el recorrido al final
+            # Create result list for accumulating nodes
             result = []
-            # se inicia el llamado recursivo por la raiz del árbol
+            # Start recursive in-order traversal from root
             self.__inOrderTraversal(self.root, result)
             return result
 
-    # Método recursivo para el recorrido Pre-Order
     def __inOrderTraversal(self, currentRoot, result):
-        # se verifica si tiene hijo izquierdo para seguir el recorrido por él
+        """
+        Recursively perform in-order traversal on a subtree.
+
+        Visit order: Left subtree -> Current node -> Right subtree
+        For a BST, this produces values in ascending sorted order.
+
+        Args:
+            currentRoot (Node): The current node (subtree root) being visited.
+            result (list): The list to accumulate nodes in in-order sequence.
+        """
+        # Traverse left subtree first if it exists
         if currentRoot.getLeftChild() is not None:
             self.__inOrderTraversal(currentRoot.getLeftChild(), result)
 
-        # Se imprime (agrega a la cola) la raiz actual
+        # Process current node
         result.append(currentRoot)
 
-        # se verifica si tiene hijo derecho para seguir el recorrido por él
+        # Finally traverse right subtree if it exists
         if currentRoot.getRightChild() is not None:
             self.__inOrderTraversal(currentRoot.getRightChild(), result)
 
-    # Método para realizar el recorrido en profundidad tipo  Pos-Order
     def posOrderTraversal(self):
-        # validar si el árbol está vacío y mostrar mensaje
+        """
+        Perform a post-order traversal of the tree.
+
+        Post-order traversal visits nodes in this order: Left subtree -> Right subtree -> Node.
+        This is useful for deleting trees or computing values bottom-up.
+        Prints a message if the tree is empty.
+
+        Returns:
+            list: A list of nodes in post-order sequence, or None if tree is empty.
+
+        Time Complexity: O(n) - Visits each node exactly once.
+        """
+        # Check if the tree is empty
         if self.root is None:
-            print("El árbol está vacío.")
+            print("The tree is empty.")
+            return None
         else:
-            # si el árbol no está vacío, se genera un result que tendrá el recorrido al final
+            # Create result list for accumulating nodes
             result = []
-            # se inicia el llamado recursivo por la raiz del árbol
+            # Start recursive post-order traversal from root
             self.__posOrderTraversal(self.root, result)
             return result
 
-    # Método recursivo para el recorrido Pre-Order
     def __posOrderTraversal(self, currentRoot, result):
-        # se verifica si tiene hijo izquierdo para seguir el recorrido por él
+        """
+        Recursively perform post-order traversal on a subtree.
+
+        Visit order: Left subtree -> Right subtree -> Current node
+
+        Args:
+            currentRoot (Node): The current node (subtree root) being visited.
+            result (list): The list to accumulate nodes in post-order sequence.
+        """
+        # Traverse left subtree first if it exists
         if currentRoot.getLeftChild() is not None:
             self.__posOrderTraversal(currentRoot.getLeftChild(), result)
 
-        # se verifica si tiene hijo derecho para seguir el recorrido por él
+        # Then traverse right subtree if it exists
         if currentRoot.getRightChild() is not None:
             self.__posOrderTraversal(currentRoot.getRightChild(), result)
 
-        # Se imprime (agrega a la cola) la raiz actual
+        # Process current node last
         result.append(currentRoot)
 
-    # Método para eliminar
+
+    # ========================= DELETION OPERATIONS ==========================
+
     def delete(self, value):
+        """
+        Delete a node with the given value from the Binary Search Tree.
+
+        This method searches for a node with the provided value and removes it while
+        maintaining the BST property. If the tree is empty or the value is not found,
+        appropriate messages are printed.
+
+        Args:
+            value: The value of the node to delete.
+
+        Time Complexity: O(log n) on average, O(n) in worst case (unbalanced trees).
+        """
         if self.root is None:
-            print("El árbol está vacío.")
+            print("The tree is empty.")
         else:
+            # Search for the node with the given value
             node = self.__search(self.root, value)
             if node is None:
-                print(f"El valor {value} no se encuentra en el árbol.")
+                print(f"The value {value} was not found in the tree.")
             else:
+                # Node found, proceed with deletion
                 self.__deleteNode(node)
 
-    # Método que evalúa cada uno de los casos de eliminar y procede según sea
     def __deleteNode(self, node):
-        # identificar el caso de eliminación
+        """
+        Handle the actual deletion of a node, considering three cases.
+
+        This method evaluates the deletion case based on the number of children
+        the node has and calls the appropriate deletion method.
+
+        Args:
+            node (Node): The node to delete.
+        """
+        # Identify which deletion case applies to this node
         nodeCase = self.IdentifyDeletionCase(node)
         match nodeCase:
             case 1:
+                # Node is a leaf (no children)
                 self.__deleteLeafNode(node)
             case 2:
+                # Node has exactly one child
                 self.__deleteNodeWithOneChild(node)
             case 3:
+                # Node has two children
                 self.__deleteNodeWithTwoChilds(node)
 
-    # Método que permite eliminar un nodo hoja del árbol
     def __deleteLeafNode(self, node):
-        """Remove a leaf node by unlinking it from its parent."""
+        """
+        Delete a leaf node from the tree by unlinking it from its parent.
+
+        A leaf node is a node with no children. It is simply removed by setting
+        the appropriate child pointer of its parent to None.
+
+        Args:
+            node (Node): The leaf node to delete.
+        """
         parent = node.getParent()
         if parent is None:
-            # This node is the root and the only node in the tree.
+            # This node is the root and has no children (only node in tree)
             self.root = None
+        elif parent.getLeftChild() is node:
+            # Node is the left child of its parent
+            parent.setLeftChild(None)
         else:
-            if parent.getLeftChild() is node:
-                parent.setLeftChild(None)
-            else:
-                parent.setRightChild(None)
+            # Node is the right child of its parent
+            parent.setRightChild(None)
+        # Clear the node's parent pointer
         node.setParent(None)
 
-    # Métdodo que permite eliminar un nodo con un hijo
     def __deleteNodeWithOneChild(self, node):
+        """
+        Delete a node that has exactly one child.
+
+        When a node has one child, it is replaced by that child. The child assumes
+        the position of the deleted node in the tree.
+
+        Args:
+            node (Node): The node with one child to delete.
+        """
         parent = node.getParent()
-        # Determinar el hijo existente
+
+        # Determine which child exists
         if node.getLeftChild() is not None:
             child = node.getLeftChild()
         else:
             child = node.getRightChild()
-        # Caso especial: es la raíz
+
+        # Special case: the node being deleted is the root
         if parent is None:
             self.root = child
             child.setParent(None)
             return
-        # Conectar padre con hijo usando comparación de referencias
+
+        # Connect parent directly to the child, bypassing the deleted node
         if parent.getLeftChild() is node:
             parent.setLeftChild(child)
         else:
             parent.setRightChild(child)
         child.setParent(parent)
 
-    # Método que permite eliminar un nodo con dos hijos utilizando la secuencia del predecesor
     def __deleteNodeWithTwoChilds(self, node):
+        """
+        Delete a node that has both left and right children.
 
-        # Buscar el predecesor (máximo del subárbol izquierdo)
+        When a node has two children, we use the in-order predecessor strategy:
+        1. Find the maximum value in the left subtree (predecessor)
+        2. Replace the node's value with the predecessor's value
+        3. Delete the predecessor node from the left subtree
+
+        This maintains the BST property after deletion.
+
+        Args:
+            node (Node): The node with two children to delete.
+        """
+        # Find the in-order predecessor (maximum value in left subtree)
         predecessor = node.getLeftChild()
         while predecessor.getRightChild() is not None:
             predecessor = predecessor.getRightChild()
-        # Copiar el valor del predecesor al nodo actual
+
+        # Replace the node's value with the predecessor's value
         node.setValue(predecessor.getValue())
-        # Eliminar el predecesor
-        # El predecesor tendrá 0 o 1 hijo (nunca 2)
+
+        # Delete the predecessor node from the left subtree
+        # The predecessor will have 0 or 1 child (never 2 by nature)
         if predecessor.getLeftChild() is not None:
             self.__deleteNodeWithOneChild(predecessor)
         else:
             self.__deleteLeafNode(predecessor)
 
-    # Método para identificar cuál es el caso de eliminación
-    # 1. Nodo hoja
-    # 2. Nodo con un hijo
-    # 3. Nodo con 2 hijos
     def IdentifyDeletionCase(self, node):
-        # Nodo hoja
+        """
+        Identify and return the deletion case for a given node.
+
+        There are three possible cases for node deletion in a BST:
+        1. Leaf node: has no children
+        2. Node with one child: has either a left or right child, but not both
+        3. Node with two children: has both left and right children
+
+        Args:
+            node (Node): The node to classify.
+
+        Returns:
+            int: 1 for leaf node, 2 for one child, 3 for two children.
+        """
+        # Case 1: Node is a leaf (no children)
         if node.getLeftChild() is None and node.getRightChild() is None:
-            nodeCase = 1
-        # Nodo con un hijo (derecho o izquierdo, pero no ambos a la vez)
-        elif (node.getLeftChild() is None) != (
-            node.getRightChild() is None
-        ):  # XOR LOGICO
-            nodeCase = 2
-        # Nodo con 2 hijos
+            return 1
+        # Case 2: Node has exactly one child (XOR logic: one is None, the other is not)
+        elif (node.getLeftChild() is None) != (node.getRightChild() is None):
+            return 2
+        # Case 3: Node has both children
         elif node.getLeftChild() is not None and node.getRightChild() is not None:
-            nodeCase = 3
-        return nodeCase
+            return 3
 
-    # Método que permite calcular la altura de un nodo
+
+    # ========================= HEIGHT CALCULATION =============================
+
     def getHeightNode(self, node):
-        if node is None:
-            return -1
-        else:
-            return self.__getHeightNode(node)
+        """
+        Calculate the height of a given node in the tree.
 
-    # Cálculo recursivo de la altura de un nodo
+        The height of a node is defined as the longest path from that node to a leaf.
+        This method handles None nodes gracefully by returning -1.
+
+        Args:
+            node (Node): The node whose height to calculate.
+
+        Returns:
+            int: The height of the node, or -1 if the node is None.
+
+        Time Complexity: O(n) where n is the number of nodes in the subtree.
+        """
+        return -1 if node is None else self.__getHeightNode(node)
+
     def __getHeightNode(self, node):
-        # si es None se debe retornar -1 para equilibrar el +1 de su padre
+        """
+        Recursively calculate the height of a node.
+
+        Height is defined as 1 + the maximum height of its two children.
+        Leaf nodes have height 0, and None nodes contribute -1 (which balances to 0 for a leaf).
+
+        Args:
+            node (Node): The node whose height to calculate.
+
+        Returns:
+            int: The height of the node. Returns -1 for None nodes to properly balance parent heights.
+        """
         if node is None:
             return -1
-        else:
-            # se verifica altura por hijo izquierdo
-            leftHeight = self.__getHeightNode(node.getLeftChild())
-            # se verifica altura por hijo derecho
-            rightHeight = self.__getHeightNode(node.getRightChild())
-            # se obtiene el mayor valor de las alturas calculadas
-            maxHeight = max(leftHeight, rightHeight)
-            # se incrementa en 1 al retornar al padre para representar la arista que los une
-            return maxHeight + 1
+        # Calculate height of left subtree
+        leftHeight = self.__getHeightNode(node.getLeftChild())
+        # Calculate height of right subtree
+        rightHeight = self.__getHeightNode(node.getRightChild())
+        # Find the greater height value
+        maxHeight = max(leftHeight, rightHeight)
+        # Return height incremented by 1 to represent the edge to parent
+        return maxHeight + 1
 
-    # Method to render the tree structure in a human-readable text form.
-    # This helps to visually verify that insertion and structure are correct.
+
+    # ========================= TREE VISUALIZATION =============================
+
     def print_tree(self):
+        """
+        Print a visual representation of the tree structure to the console.
+
+        Displays the tree using ASCII art with connecting lines to show the hierarchical
+        structure. The root appears at the left, with branches extending to the right.
+        Left children appear above right children at each level.
+
+        If the tree is empty, prints a message indicating this.
+        """
         if self.root is None:
-            print("El árbol está vacío.")
+            print("The tree is empty.")
         else:
             self.__print_tree(self.root, "", True)
 
     def __print_tree(self, node=None, prefix="", is_left=True):
+        """
+        Recursively print a tree structure with ASCII art visualization.
+
+        This private method uses Unicode box-drawing characters and indentation to create
+        a visual representation of the tree structure. It processes the right subtree first
+        (displayed above), then the node, then the left subtree (displayed below).
+
+        Args:
+            node (Node): The current node to print (subtree root).
+            prefix (str): The indentation prefix for alignment of child nodes.
+            is_left (bool): Whether this node is a left child (affects connector characters).
+        """
         if node is not None:
-            # Print right subtree first so it appears above the current node.
+            # Process right subtree first so it appears above the current node
             if node.getRightChild():
+                # Calculate prefix for right child
                 new_prefix = prefix + ("│   " if is_left else "    ")
                 self.__print_tree(node.getRightChild(), new_prefix, False)
 
-            # Print current node
+            # Print current node with appropriate connector character
             connector = "└── " if is_left else "┌── "
             print(prefix + connector + str(node.getValue()))
 
-            # Print left subtree
+            # Process left subtree so it appears below the current node
             if node.getLeftChild():
+                # Calculate prefix for left child
                 new_prefix = prefix + ("    " if is_left else "│   ")
                 self.__print_tree(node.getLeftChild(), new_prefix, True)

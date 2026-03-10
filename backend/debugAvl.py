@@ -2,7 +2,7 @@ from models.AvlTree import AvlTree
 from models.Node import Node
 
 
-def main():
+def main():  # sourcery skip: extract-duplicate-method
 
     tree = AvlTree()
 
