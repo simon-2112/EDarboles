@@ -10,14 +10,19 @@ class Node:
         self._parent = None
         self._leftChild = None
         self._rightChild = None
+        self._height = 1  # For AVL balancing
 
     def getValue(self):
-        """Return the value stored in this node."""
         return self._value
+    
+    def getHeight(self):
+        return self._height
 
     def setValue(self, value):
-        """Set the value stored in this node."""
         self._value = value
+
+    def setHeight(self, height):
+        self._height = height
 
     def getLeftChild(self):
         return self._leftChild

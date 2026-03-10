@@ -1,6 +1,7 @@
+import models.Queue as Queue
+
 class AvlTree:
     """AVL tree implementation for balancing nodes after insertions/deletions.
-
     This class uses the same Node model as the BST (with getValue, getLeftChild,
     getRightChild, setLeftChild, setRightChild, setParent). It maintains the AVL
     property (balance factor -1..1) by applying rotations.
@@ -35,14 +36,13 @@ class AvlTree:
                 child_root = self._insert(current.getLeftChild(), node)
                 current.setLeftChild(child_root)
                 child_root.setParent(current)
+        elif current.getRightChild() is None:
+            current.setRightChild(node)
+            node.setParent(current)
         else:
-            if current.getRightChild() is None:
-                current.setRightChild(node)
-                node.setParent(current)
-            else:
-                child_root = self._insert(current.getRightChild(), node)
-                current.setRightChild(child_root)
-                child_root.setParent(current)
+            child_root = self._insert(current.getRightChild(), node)
+            current.setRightChild(child_root)
+            child_root.setParent(current)
 
         return self._rebalance(current)
 
@@ -59,28 +59,63 @@ class AvlTree:
             return None
 
         if value < current.getValue():
-            current.setLeftChild(self._delete(current.getLeftChild(), value))
-            if current.getLeftChild() is not None:
-                current.getLeftChild().setParent(current)
-        elif value > current.getValue():
-            current.setRightChild(self._delete(current.getRightChild(), value))
-            if current.getRightChild() is not None:
-                current.getRightChild().setParent(current)
-        else:
-            # Node to delete found
-            if current.getLeftChild() is None:
-                return current.getRightChild()
-            if current.getRightChild() is None:
-                return current.getLeftChild()
+            new_left = self._delete(current.getLeftChild(), value)
+            current.setLeftChild(new_left)
+            if new_left is not None:
+                new_left.setParent(current)
 
-            # Node has two children: replace with predecessor
-            pred = self._max_node(current.getLeftChild())
-            current.setValue(pred.getValue())
-            current.setLeftChild(self._delete(current.getLeftChild(), pred.getValue()))
-            if current.getLeftChild() is not None:
-                current.getLeftChild().setParent(current)
+        elif value > current.getValue():
+            new_right = self._delete(current.getRightChild(), value)
+            current.setRightChild(new_right)
+            if new_right is not None:
+                new_right.setParent(current)
+
+        else:
+            return self._delete_node(current)
 
         return self._rebalance(current)
+    
+
+    def _delete_node(self, node):
+        if node.getLeftChild() is None:
+            return self._replace_with_right_child(node)
+
+        if node.getRightChild() is None:
+            return self._replace_with_left_child(node)
+
+        return self._delete_with_two_children(node)
+    
+
+    def _replace_with_right_child(self, node):
+        child = node.getRightChild()
+
+        if child is not None:
+            child.setParent(node.getParent())
+            
+        return child
+
+
+    def _replace_with_left_child(self, node):
+        child = node.getLeftChild()
+
+        if child is not None:
+            child.setParent(node.getParent())
+
+        return child
+
+
+    def _delete_with_two_children(self, node):
+        pred = self._max_node(node.getLeftChild())
+        node.setValue(pred.getValue())
+
+        new_left = self._delete(node.getLeftChild(), pred.getValue())
+
+        node.setLeftChild(new_left)
+
+        if new_left is not None:
+            new_left.setParent(node)
+
+        return node
 
     def _max_node(self, node):
         while node.getRightChild() is not None:
@@ -90,17 +125,25 @@ class AvlTree:
     # ----------------------------- BALANCING -------------------------------
 
     def _height(self, node):
-        if node is None:
-            return 0
-        return 1 + max(self._height(node.getLeftChild()), self._height(node.getRightChild()))
+        return 0 if node is None else node.getHeight()
 
+    def _update_height(self, node):
+        node.setHeight(
+            1 + max(
+                self._height(node.getLeftChild()),
+                self._height(node.getRightChild())
+            )
+        )
     def _balance_factor(self, node):
         if node is None:
             return 0
         return self._height(node.getLeftChild()) - self._height(node.getRightChild())
 
     def _rebalance(self, node):
+        self._update_height(node)
+        
         bf = self._balance_factor(node)
+        
         if bf > 1:
             # Left heavy
             if self._balance_factor(node.getLeftChild()) < 0:
@@ -117,53 +160,57 @@ class AvlTree:
 
         return node
 
-    def _rotate_left(self, z):
-        y = z.getRightChild()
-        if y is None:
-            return z
+    def _rotate_left(self, pivot):  # sourcery skip: class-extract-method
+        new_root = pivot.getRightChild()
+        if new_root is None:
+            return pivot
 
-        t2 = y.getLeftChild()
-        y.setLeftChild(z)
-        z.setRightChild(t2)
+        middle_subtree = new_root.getLeftChild()
 
-        if t2 is not None:
-            t2.setParent(z)
+        new_root.setLeftChild(pivot)
+        pivot.setRightChild(middle_subtree)
 
-        parent = z.getParent()
-        y.setParent(parent)
-        z.setParent(y)
+        root = self._update_rotation_parents(middle_subtree, pivot, new_root)
 
-        if parent is not None:
-            if parent.getLeftChild() is z:
-                parent.setLeftChild(y)
-            else:
-                parent.setRightChild(y)
+        self._update_height(pivot)
+        self._update_height(new_root)
 
-        return y
+        return root
 
-    def _rotate_right(self, z):
-        y = z.getLeftChild()
-        if y is None:
-            return z
+    def _rotate_right(self, pivot):
+        new_root = pivot.getLeftChild()
+        if new_root is None:
+            return pivot
 
-        t3 = y.getRightChild()
-        y.setRightChild(z)
-        z.setLeftChild(t3)
+        middle_subtree = new_root.getRightChild()
 
-        if t3 is not None:
-            t3.setParent(z)
+        new_root.setRightChild(pivot)
+        pivot.setLeftChild(middle_subtree)
 
-        parent = z.getParent()
-        y.setParent(parent)
-        z.setParent(y)
+        root = self._update_rotation_parents(middle_subtree, pivot, new_root)
 
-        if parent is not None:
-            if parent.getLeftChild() is z:
-                parent.setLeftChild(y)
-            else:
-                parent.setRightChild(y)
+        self._update_height(pivot)
+        self._update_height(new_root)
 
-        return y
+        return root
+
+    def _update_rotation_parents(self, middle_subtree, old_root, new_root):
+        if middle_subtree is not None:
+            middle_subtree.setParent(old_root)
+
+        parent = old_root.getParent()
+
+        new_root.setParent(parent)
+        old_root.setParent(new_root)
+
+        if parent is None:
+            self.root = new_root
+        elif parent.getLeftChild() is old_root:
+            parent.setLeftChild(new_root)
+        else:
+            parent.setRightChild(new_root)
+
+        return new_root
 
     # --------------------------- VALIDACIÓN AVL ---------------------------
 
@@ -183,9 +230,7 @@ class AvlTree:
     # --------------------------- RECORRIDOS -------------------------------
 
     def search(self, value):
-        if self.root is None:
-            return None
-        return self.__search(self.root, value)
+        return None if self.root is None else self.__search(self.root, value)
 
     def __search(self, currentRoot, value):
         if currentRoot is None:
@@ -199,15 +244,16 @@ class AvlTree:
     def breadthFirstSearch(self):
         if self.root is None:
             return []
-        queue = [self.root]
+        queue = Queue.Queue()
+        queue.enqueue(self.root)
         result = []
-        while queue:
-            node = queue.pop(0)
+        while not queue.isEmpty():
+            node = queue.dequeue()
             result.append(node.getValue())
             if node.getLeftChild() is not None:
-                queue.append(node.getLeftChild())
+                queue.enqueue(node.getLeftChild())
             if node.getRightChild() is not None:
-                queue.append(node.getRightChild())
+                queue.enqueue(node.getRightChild())
         return result
 
     def preOrderTraversal(self):
