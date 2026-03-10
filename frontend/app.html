@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkyBalance AVL - Sistema de Gestión</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="app-header">
+        <div class="header-left">
+            <img src="assets/images/logo.png" alt="SkyBalance" class="app-logo">
+            <h1 class="app-title">SkyBalance AVL</h1>
+        </div>
+        <div class="header-center">
+            <span class="mode-indicator" id="mode-indicator">Modo Normal</span>
+        </div>
+        <div class="header-right">
+            <button class="btn-icon" id="btn-home" title="Volver al inicio">Volver</button>
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+    <main class="app-main">
+        <!-- Panel Izquierdo - Controles -->
+        <aside class="panel panel-left">
+            <div class="panel-section">
+                <h3 class="panel-title">Cargar Árbol</h3>
+                <input type="file" id="file-input" accept=".json" style="display: none;">
+                <button class="btn btn-primary btn-block" id="btn-load-file">
+                    Seleccionar archivo JSON
+                </button>
+                <div class="file-info" id="file-info" style="display: none;">
+                    <small id="file-name"></small>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3 class="panel-title">Insertar Vuelo</h3>
+                <form id="form-insert" class="form-controls">
+                    <input type="text" id="input-codigo" placeholder="Código (ej: SB400)" required>
+                    <input type="text" id="input-origen" placeholder="Origen" required>
+                    <input type="text" id="input-destino" placeholder="Destino" required>
+                    <input type="time" id="input-hora" placeholder="Hora Salida" required>
+                    <input type="number" id="input-precio" placeholder="Precio Base" min="0" required>
+                    <input type="number" id="input-pasajeros" placeholder="Pasajeros" min="0" required>
+                    <input type="number" id="input-prioridad" placeholder="Prioridad (1-3)" min="1" max="3" required>
+                    
+                    <div class="checkbox-group">
+                        <label>
+                            <input type="checkbox" id="input-promocion">
+                            <span>Promoción</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" id="input-alerta">
+                            <span>Alerta</span>
+                        </label>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success btn-block">Insertar</button>
+                </form>
+            </div>
+
+            <div class="panel-section">
+                <h3 class="panel-title">Eliminar/Cancelar</h3>
+                <div class="form-controls">
+                    <input type="text" id="input-delete-codigo" placeholder="Código del vuelo">
+                    <button class="btn btn-warning btn-block" id="btn-delete">Eliminar Nodo</button>
+                    <button class="btn btn-danger btn-block" id="btn-cancel">Cancelar Vuelo + Descendientes</button>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3 class="panel-title">Acciones</h3>
+                <div class="form-controls">
+                    <button class="btn btn-block" id="btn-undo">Deshacer (Ctrl+Z)</button>
+                    <button class="btn btn-block" id="btn-export">Exportar JSON</button>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3 class="panel-title">Modo Estrés</h3>
+                <div class="form-controls">
+                    <label class="switch-container">
+                        <input type="checkbox" id="toggle-stress">
+                        <span class="switch-slider"></span>
+                        <span class="switch-label">Activar Modo Estrés</span>
+                    </label>
+                    <button class="btn btn-primary btn-block" id="btn-rebalance" disabled>
+                        Rebalancear Todo
+                    </button>
+                    <button class="btn btn-block" id="btn-verify-avl" disabled>
+                        Verificar Propiedad AVL
+                    </button>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3 class="panel-title">Profundidad Crítica</h3>
+                <div class="form-controls">
+                    <input type="number" id="input-critical-depth" placeholder="Profundidad límite" value="5" min="1">
+                    <button class="btn btn-block" id="btn-update-depth">Actualizar</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Panel Central - Canvas del Árbol -->
+        <section class="panel panel-center">
+            <div class="canvas-header">
+                <h2>Árbol AVL</h2>
+                <div class="canvas-controls">
+                    <button class="btn-icon" id="btn-zoom-in" title="Acercar">🔍+</button>
+                    <button class="btn-icon" id="btn-zoom-out" title="Alejar">🔍-</button>
+                    <button class="btn-icon" id="btn-reset-view" title="Restablecer vista">🔄</button>
+                </div>
+            </div>
+            <div class="canvas-container" id="canvas-container">
+                <canvas id="tree-canvas"></canvas>
+                <div class="empty-state" id="empty-state">
+                    <h3>No hay árbol cargado --</h3>
+                    <h3>-- Carga un archivo JSON para comenzar</h3>
+                </div>
+            </div>
+        </section>
+
+        <!-- Panel Derecho - Métricas -->
+        <aside class="panel panel-right">
+            <div class="panel-section">
+                <h3 class="panel-title">Métricas del Árbol</h3>
+                <div class="metrics-grid">
+                    <div class="metric-item">
+                        <span class="metric-label">Altura:</span>
+                        <span class="metric-value" id="metric-altura">-</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">Nodos:</span>
+                        <span class="metric-value" id="metric-nodos">0</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">Hojas:</span>
+                        <span class="metric-value" id="metric-hojas">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3 class="panel-title">Rotaciones</h3>
+                <div class="metrics-grid">
+                    <div class="metric-item">
+                        <span class="metric-label">Total:</span>
+                        <span class="metric-value" id="metric-rotaciones">0</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">LL:</span>
+                        <span class="metric-value" id="metric-ll">0</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">RR:</span>
+                        <span class="metric-value" id="metric-rr">0</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">LR:</span>
+                        <span class="metric-value" id="metric-lr">0</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">RL:</span>
+                        <span class="metric-value" id="metric-rl">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3 class="panel-title">Recorridos</h3>
+                <div class="traversal-buttons">
+                    <button class="btn btn-sm" id="btn-traversal-inorder">InOrder</button>
+                    <button class="btn btn-sm" id="btn-traversal-preorder">PreOrder</button>
+                    <button class="btn btn-sm" id="btn-traversal-postorder">PostOrder</button>
+                    <button class="btn btn-sm" id="btn-traversal-bfs">BFS</button>
+                </div>
+                <div class="traversal-result" id="traversal-result"></div>
+            </div>
+
+            <div class="panel-section">
+                <h3 class="panel-title">Leyenda</h3>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #4ECDC4;"></div>
+                        <span>Normal</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #51CF66;"></div>
+                        <span>Promoción</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #FF6B6B;"></div>
+                        <span>Alerta</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #FFD93D;"></div>
+                        <span>Profundidad Crítica</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3 class="panel-title">Versiones</h3>
+                <div class="form-controls">
+                    <input type="text" id="input-version-name" placeholder="Nombre de versión">
+                    <button class="btn btn-primary btn-block" id="btn-save-version">
+                        Guardar Versión
+                    </button>
+                </div>
+                <div class="version-list" id="version-list"></div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Scripts -->
+    <script type="module" src="js/app-main.js"></script>
+</body>
+</html>
