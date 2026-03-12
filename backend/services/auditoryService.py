@@ -1,1 +1,0 @@
-#we can get there for example methods to read and write JSON files, or create methods for iterative patterns.
