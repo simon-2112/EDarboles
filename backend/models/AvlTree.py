@@ -1,4 +1,4 @@
-import Queue
+from models.Queue import Queue
 
 
 class AvlTree:
@@ -141,14 +141,14 @@ class AvlTree:
             # Value not found in tree
             return None
 
-        if value < current.getValue():
+        if value.getValue() < current.getValue():
             # Search for value in the left subtree
             new_left = self._delete(current.getLeftChild(), value)
             current.setLeftChild(new_left)
             if new_left is not None:
                 new_left.setParent(current)
 
-        elif value > current.getValue():
+        elif value.getValue() > current.getValue():
             # Search for value in the right subtree
             new_right = self._delete(current.getRightChild(), value)
             current.setRightChild(new_right)
@@ -637,10 +637,10 @@ class AvlTree:
         if currentRoot is None:
             # Reached a leaf without finding the value
             return None
-        if currentRoot.getValue() == value:
+        if currentRoot.getValue() == value.getValue():
             # Found the target value
             return currentRoot
-        if value < currentRoot.getValue():
+        if value.getValue() < currentRoot.getValue():
             # Search in the left subtree
             return self.__search(currentRoot.getLeftChild(), value)
         # Search in the right subtree

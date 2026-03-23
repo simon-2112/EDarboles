@@ -1,4 +1,4 @@
-import Queue
+from models.Queue import Queue
 
 
 class BstTree:

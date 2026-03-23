@@ -29,11 +29,14 @@
         <aside class="panel panel-left">
             <div class="panel-section">
                 <h3 class="panel-title">Cargar Árbol</h3>
-                <input type="file" id="file-input" accept=".json" style="display: none;">
+                <!-- THERE ARE SOME PROBLEMS, I NEED TO SELECT MY JSON FILE BUT THERE IS A INDEPENDENT BUTTON, AND THERE IS AN INPUT TOO. -->
+                <label class="hidden">Selecciona archivo json
+                    <input type="file" id="file-input" accept=".json">
+                </label>
                 <button class="btn btn-primary btn-block" id="btn-load-file">
                     Seleccionar archivo JSON
                 </button>
-                <div class="file-info" id="file-info" style="display: none;">
+                <div class="file-info hidden" id="file-info">
                     <small id="file-name"></small>
                 </div>
             </div>

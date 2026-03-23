@@ -3,6 +3,8 @@ class Node:
 
     The stored value can be any object (e.g., a Flight instance). The node
     keeps references to its parent and children.
+    
+    IMPORTANT: THE VALUE OF THE NODE WILL BE A FLIGHT OBJECT...
     """
 
     def __init__(self, value):

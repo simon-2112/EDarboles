@@ -1,1 +1,27 @@
 .hintrc
+
+# Entorno virtual
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Archivos temporales
+*.log
+*.tmp
+
+# VSCode
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Flask / entorno
+instance/
+.env
+.env.*

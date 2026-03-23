@@ -313,33 +313,67 @@ class Flight:
                 f"departureCity={self._departureCity}, arrivalCity={self._arrivalCity}, "
                 f"duration={self._duration})")
 
-    def __eq__(self, other):
+    def _get_numeric_id(self):
         """
-        Check equality between two Flight objects based on flight ID.
-
-        Args:
-            other (Flight): Another Flight object to compare.
-
-        Returns:
-            bool: True if both flights have the same ID.
+            this method help us to convert our flight string id to a numeric value comparable.
         """
-        if not isinstance(other, Flight):
-            return NotImplemented
-        return self._idFlight == other._idFlight
+        if isinstance(self._idFlight, str):
+            if digits := ''.join(filter(str.isdigit, self._idFlight)):
+                return int(digits)
+            else:
+                raise ValueError(f"idFlight inválido: {self._idFlight} no contiene números")
+        return self._idFlight
+
 
     def __lt__(self, other):
         """
-        Compare flights for sorting. Uses priority as primary criterion.
+        Compare this flight with another flight based on their numeric IDs.
+
+        This method enables ordering of Flight instances using the less-than operator.
 
         Args:
-            other (Flight): Another Flight object to compare.
+            other (Flight): Another flight instance to compare against.
 
         Returns:
-            bool: True if this flight's priority is lower (higher priority value means more important).
+            bool: True if this flight's numeric ID is less than the other's, False otherwise.
         """
         if not isinstance(other, Flight):
             return NotImplemented
-        return self._priority < other._priority
+        return self._get_numeric_id() < other._get_numeric_id()
+
+
+    def __gt__(self, other):
+        """
+        Compare this flight with another flight based on their numeric IDs.
+
+        This method enables ordering of Flight instances using the greater-than operator.
+
+        Args:
+            other (Flight): Another flight instance to compare against.
+
+        Returns:
+            bool: True if this flight's numeric ID is greater than the other's, False otherwise.
+        """
+        if not isinstance(other, Flight):
+            return NotImplemented
+        return self._get_numeric_id() > other._get_numeric_id()
+
+
+    def __eq__(self, other):
+        """
+        Determine if two flights are equal based on their numeric IDs.
+
+        This method supports equality comparison between Flight instances.
+
+        Args:
+            other (Flight): Another flight instance to compare against.
+
+        Returns:
+            bool: True if both flights have the same numeric ID, False otherwise.
+        """
+        if not isinstance(other, Flight):
+            return NotImplemented
+        return self._get_numeric_id() == other._get_numeric_id()
 
     def __hash__(self):
         """

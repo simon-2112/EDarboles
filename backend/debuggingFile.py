@@ -1,17 +1,18 @@
 #this is a file only for debbuging purposes.
-from utils import utils
+from utils.utils import *
+from services.flightTreeService import TreeService
+from models.Flight import Flight
 import json
 
 def main():
-    content = utils.readJson()  
-    print(f"content: {content}")      
-    parser = json.loads(content)
-
-    parser[0]["root"] = {"value": 10, "left": None, "right": None}
-
-    parser = json.dumps(parser, indent=4)
-
-    utils.writeJson(parser)
+    pass
+    # service =  TreeService()
+    # data = readJson("./data/modo_topologia.json"); #this is only for test purposes, data is obtained from the frontend
+    # service.createTree(data)
+    # service.toPrintConsole()
+    # print()
+    # print()
+    # print(service.getTreeJson())
 
 if __name__ == "__main__":
     main()
