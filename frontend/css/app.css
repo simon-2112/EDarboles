@@ -14,6 +14,7 @@
     --light-gray: #f3f4f6;
     --white: #ffffff;
     --border: #e5e7eb;
+    --purple: #7d2181;
     --shadow: rgba(0, 0, 0, 0.1);
 }
 
@@ -188,6 +189,17 @@ body {
 
 .btn-danger {
     background: var(--danger);
+    color: var(--white);
+}
+
+/* because the class actually does not work! */
+#btn-delete-rental-node{
+    background: var(--purple);
+    color: var(--white);
+}
+
+.btn-purple{
+    background: var(--purple);
     color: var(--white);
 }
 

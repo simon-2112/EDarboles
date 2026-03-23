@@ -22,20 +22,19 @@ class Flight:
         _duration (float): Flight duration in hours.
     """
 
-    def __init__(self, idFlight=None, numberPassengers=0, promotion=0.0, price=0.0,
-                 priority=0, departureDate=None, arrivalDate=None, departureCity="",
-                 arrivalCity="", duration=0.0):
+    def __init__(self, idFlight=None, numberPassengers=0, promotion=False, price=0.0,
+                priority=0, departureDate=None, departureCity="",
+                arrivalCity="", duration=0.0):
         """
         Initialize a Flight object with the provided parameters.
 
         Args:
             idFlight (int, optional): Unique flight identifier. Defaults to None.
             numberPassengers (int, optional): Number of passengers. Defaults to 0.
-            promotion (float, optional): Promotional discount percentage (0-100). Defaults to 0.0.
+            promotion (boolean, optional): There are promotion or not. Defaults False
             price (float, optional): Base ticket price. Defaults to 0.0.
             priority (int, optional): Flight priority level. Defaults to 0.
             departureDate (datetime, optional): Departure date and time. Defaults to None.
-            arrivalDate (datetime, optional): Arrival date and time. Defaults to None.
             departureCity (str, optional): Departure city name. Defaults to empty string.
             arrivalCity (str, optional): Arrival city name. Defaults to empty string.
             duration (float, optional): Flight duration in hours. Defaults to 0.0.
@@ -46,7 +45,6 @@ class Flight:
         self._price = price
         self._priority = priority
         self._departureDate = departureDate
-        self._arrivalDate = arrivalDate
         self._departureCity = departureCity
         self._arrivalCity = arrivalCity
         self._duration = duration
@@ -62,7 +60,7 @@ class Flight:
         return self._numberPassengers
 
     def getPromotion(self):
-        """Get the promotional discount percentage (0-100)."""
+        """Get the promotional discount state"""
         return self._promotion
 
     def getPrice(self):
@@ -76,10 +74,6 @@ class Flight:
     def getDepartureDate(self):
         """Get the departure date and time."""
         return self._departureDate
-
-    def getArrivalDate(self):
-        """Get the arrival date and time."""
-        return self._arrivalDate
 
     def getDepartureCity(self):
         """Get the departure city name."""
@@ -116,17 +110,6 @@ class Flight:
         self._numberPassengers = numberPassengers
 
     def setPromotion(self, promotion):
-        """
-        Set the promotional discount percentage.
-
-        Args:
-            promotion (float): Discount percentage (0-100).
-
-        Raises:
-            ValueError: If promotion is not between 0 and 100.
-        """
-        if promotion < 0 or promotion > 100:
-            raise ValueError("Promotion percentage must be between 0 and 100.")
         self._promotion = promotion
 
     def setPrice(self, price):
@@ -163,15 +146,6 @@ class Flight:
             departureDate (datetime): The departure datetime object.
         """
         self._departureDate = departureDate
-
-    def setArrivalDate(self, arrivalDate):
-        """
-        Set the arrival date and time.
-
-        Args:
-            arrivalDate (datetime): The arrival datetime object.
-        """
-        self._arrivalDate = arrivalDate
 
     def setDepartureCity(self, departureCity):
         """
@@ -299,7 +273,6 @@ class Flight:
             "price": self._price,
             "priority": self._priority,
             "departureDate": self._departureDate.isoformat() if self._departureDate else None,
-            "arrivalDate": self._arrivalDate.isoformat() if self._arrivalDate else None,
             "departureCity": self._departureCity,
             "arrivalCity": self._arrivalCity,
             "duration": self._duration,
@@ -336,7 +309,7 @@ class Flight:
         """
         return (f"Flight(idFlight={self._idFlight}, numberPassengers={self._numberPassengers}, "
                 f"promotion={self._promotion}, price={self._price}, priority={self._priority}, "
-                f"departureDate={self._departureDate}, arrivalDate={self._arrivalDate}, "
+                f"departureDate={self._departureDate},"
                 f"departureCity={self._departureCity}, arrivalCity={self._arrivalCity}, "
                 f"duration={self._duration})")
 

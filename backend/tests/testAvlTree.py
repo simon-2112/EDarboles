@@ -52,7 +52,7 @@ class TestAVLTree(unittest.TestCase):
 
     # ---------------- DELETE ----------------
 
-    def test_delete_leaf(self):
+    def test_delete_leaf(self):  # sourcery skip: class-extract-method
         self.tree.delete(25)
         self.assertIsNone(self.tree.search(25))
         self.assertTrue(self.tree.validate_avl())
