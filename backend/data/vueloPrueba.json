@@ -1,0 +1,11 @@
+{
+  "codigo": "SB742",
+  "origen": "Bogota",
+  "destino": "Medellin",
+  "horaSalida": "14:30",
+  "precioBase": 320.50,
+  "pasajeros": 98,
+  "promocion": true,
+  "alerta": false,
+  "prioridad": 2
+}

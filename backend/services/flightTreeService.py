@@ -137,7 +137,7 @@ class TreeService:
         self.avl.cancelationNode(nodeToCancel)
         return True
 
-    def _nodeToJson(self, node):
+    def nodeToJson(self, node):
         if node is None:
             return None
 
@@ -153,10 +153,10 @@ class TreeService:
             "prioridad": flight.getPriority(),
             "alerta": flight.getAlert(),
             "promocion": flight.getPromotion(),
-            "izquierdo": self._nodeToJson(node.getLeftChild()),
-            "derecho": self._nodeToJson(node.getRightChild())
+            "izquierdo": self.nodeToJson(node.getLeftChild()),
+            "derecho": self.nodeToJson(node.getRightChild())
         }
         
     
     def getTreeJson(self):
-        return self._nodeToJson(self.avl.root)
+        return self.nodeToJson(self.avl.root)

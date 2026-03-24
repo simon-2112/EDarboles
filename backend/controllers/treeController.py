@@ -1,11 +1,31 @@
 from flask import Blueprint,jsonify, request
+from models.AvlTree import AvlTree
+from models.BstTree import BstTree
 from services.flightTreeService import TreeService
+from models.Flight import Flight
 
 tree_bp = Blueprint("tree", __name__)
 #global/ basically a stateful API because the state of the tree persist for each request
 service = TreeService()
 
-@tree_bp.route("", methods=["POST"])
+@tree_bp.route("", methods=["GET"])
+def get_tree():
+    try:
+        result = service.getTreeJson()
+
+        return jsonify({
+            "status": "success",
+            "data": result
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 400
+
+#to create a tree
+@tree_bp.route("/create", methods=["POST"])
 def create_tree():
     data = request.get_json()
     
@@ -43,6 +63,147 @@ def cancel_subtree(flightCode):
             "status": "success",
             "message": f"Subtree {flightCode} and its descendants were removed",
             "data": result
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 400
+
+
+#to insert a flight
+@tree_bp.route("/insert", methods=["POST"])
+def insert_flight():
+    data = request.get_json()
+
+    try:
+        flight = Flight(
+            idFlight=data["codigo"],
+            departureCity=data["origen"],
+            arrivalCity=data["destino"],
+            departureDate=data["horaSalida"],
+            price=data["precioBase"],
+            numberPassengers=data["pasajeros"],
+            promotion=data["promocion"],
+            alert=data["alerta"],
+            priority=data["prioridad"]
+        )
+
+        service.insertFlight(flight)
+
+        return jsonify({
+            "status": "success",
+            "message": "Flight inserted",
+            "data": service.getTreeJson()
+        }), 201
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 400
+        
+
+#to search a flight
+@tree_bp.route("/search/<flightCode>", methods=["GET"])
+def search_flight(flightCode):
+    try:
+        if node := service.searchFlight(flightCode):
+            return jsonify({
+                "status": "success",
+                "data": service.nodeToJson(node)
+            }), 200
+
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "Flight not found"
+            }), 404
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 400
+
+#to delete a flight
+@tree_bp.route("/delete/<flightCode>", methods=["DELETE"])
+def delete_flight(flightCode):
+    try:
+        if success := service.deleteFlight(flightCode):
+            return jsonify({
+                "status": "success",
+                "message": "Flight deleted",
+                "data": service.getTreeJson()
+            }), 200
+
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "Flight not found"
+            }), 404
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 400
+
+
+#to update a flight completely
+@tree_bp.route("/update/<flightCode>", methods=["PUT"])
+def update_flight(flightCode):
+    data = request.get_json()
+
+    try:
+        # eliminar
+        deleted = service.deleteFlight(flightCode)
+
+        if not deleted:
+            return jsonify({
+                "status": "error",
+                "message": "Flight not found"
+            }), 404
+
+        # insertar nuevo
+        flight = Flight(
+            idFlight=data["codigo"],
+            departureCity=data["origen"],
+            arrivalCity=data["destino"],
+            departureDate=data["horaSalida"],
+            price=data["precioBase"],
+            numberPassengers=data["pasajeros"],
+            promotion=data["promocion"],
+            alert=data["alerta"],
+            priority=data["prioridad"]
+        )
+
+        service.insertFlight(flight)
+
+        return jsonify({
+            "status": "success",
+            "message": "Flight updated",
+            "data": service.getTreeJson()
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 400
+
+
+#reset delete all the tree
+@tree_bp.route("/reset", methods=["DELETE"])
+def reset_tree():
+    try:
+        service.avl = AvlTree()
+        service.bst = BstTree()
+
+        return jsonify({
+            "status": "success",
+            "message": "Tree reset"
         }), 200
 
     except Exception as e:
