@@ -4,10 +4,23 @@ from models.BstTree import BstTree
 from services.flightTreeService import TreeService
 from models.Flight import Flight
 
+# base route -> http://localhost:5000/api/tree
+
 tree_bp = Blueprint("tree", __name__)
-#global/ basically a stateful API because the state of the tree persist for each request
+
+"""
+    this is a stateful API because the state of the tree persist for each request,
+    there are something to talk about: for this project, the API will be a stateful API, so every USER will affect the tree,
+    even /reset endpoint delete the tree globaly, so a solution could be for example create a dictionary of trees, where the
+    key could be the user, and the value the respective tree. But actually for this educational project it is not important
+    because we assume a single user.
+"""
+
 service = TreeService()
 
+
+
+#core TREE
 @tree_bp.route("", methods=["GET"])
 def get_tree():
     try:
@@ -45,6 +58,8 @@ def create_tree():
             "message": str(e)
         }), 400
 
+#OPERATIONS
+#cancel a node + descendants
 @tree_bp.route("/cancel/<flightCode>", methods=["DELETE"])
 def cancel_subtree(flightCode):
 
@@ -194,7 +209,7 @@ def update_flight(flightCode):
         }), 400
 
 
-#reset delete all the tree
+#reset / delete all the tree
 @tree_bp.route("/reset", methods=["DELETE"])
 def reset_tree():
     try:
@@ -211,3 +226,28 @@ def reset_tree():
             "status": "error",
             "message": str(e)
         }), 400
+
+#CTRL-Z SYSTEM
+
+@tree_bp.route("/undo", methods=["POST"])
+def undo():
+    try:
+        if success := service.undoAction():
+            return jsonify({
+                "status": "success",
+                "message": "Undo successful",
+                "data": service.getTreeJson()
+            }), 200
+
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "No actions to undo"
+            }), 400
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 400
+

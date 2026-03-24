@@ -1,26 +1,28 @@
-#1) i need first to get the JSON that is created when i press the button in FRONTEND.
-#2) then i work to parse and manage that JSON to create the tree. 
-#3) then i convert that tree in a JSON format again.
-#4) then i connect my service with the respective controller.
-#5) then the FRONTEND could consume that service to make the tree's graphic.
-
 from models.AvlTree import AvlTree
 from models.BstTree import BstTree
 from utils.utils import *
 from models.Flight import Flight
 from models.Node import Node
+from models.Stack import Stack
+from copy import deepcopy
 from datetime import datetime
 
 
 class TreeService:
-    
-    
+    """
+    note:
+    the @history atribute save every action  (insertion, deletion, cancelation...)
+    but is not posible to extract states from history like pop(0) when it is near to 20 or 30 states
+    because it violates the Stack structure. (so this is a little inefficient way)
+    """
     def __init__(self):
         self.avl = AvlTree()
         self.bst = BstTree()
+        self.history = Stack()
     
     # data = readJson("../data/modo_topologia.json"); #this is only for test purposes, data is obtained from the frontend
     def createTree(self, data):
+        self.saveState()
         dataType = data["tipo"]
         
         self._createByType(dataType, data)
@@ -101,6 +103,7 @@ class TreeService:
         self.bst.print_tree()
 
     def insertFlight(self, flight):
+        self.saveState()
         node = Node(flight)
         self.avl.insert(node)
     
@@ -120,6 +123,7 @@ class TreeService:
         if not found:
             return False
 
+        self.saveState()
         self.avl.delete(node)
         return True
         
@@ -134,7 +138,25 @@ class TreeService:
         if(nodeToCancel is None):
             return False
         
+        self.saveState()
         self.avl.cancelationNode(nodeToCancel)
+        return True
+    
+
+    """
+    save the state into a Stack
+    """
+    def saveState(self):
+        self.history.push(deepcopy(self.avl))
+
+    """
+    allows to undo actions 
+    """
+    def undoAction(self):
+        if not self.history:
+            return False
+        
+        self.avl = self.history.pop()
         return True
 
     def nodeToJson(self, node):
@@ -160,3 +182,4 @@ class TreeService:
     
     def getTreeJson(self):
         return self.nodeToJson(self.avl.root)
+    
