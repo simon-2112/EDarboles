@@ -34,7 +34,6 @@ class BstTree:
         """
         return self.root
 
-
     # ========================= INSERTION OPERATIONS =========================
 
     def insert(self, node):
@@ -89,7 +88,6 @@ class BstTree:
         else:
             # Left child exists, recurse to insert further down
             self.__insert(currentRoot.getLeftChild(), node)
-
 
     # ========================= SEARCH OPERATIONS =============================
 
@@ -151,7 +149,6 @@ class BstTree:
             # Recurse into the left subtree
             return self.__search(currentRoot.getLeftChild(), value)
 
-
     # ========================= TREE TRAVERSALS ================================
 
     def breadthFirstSearch(self):
@@ -174,7 +171,7 @@ class BstTree:
             return None
         else:
             # Initialize queue with root node
-            queue = Queue.Queue()
+            queue = Queue()
             queue.enqueue(self.root)
             result = []
 
@@ -329,7 +326,6 @@ class BstTree:
 
         # Process current node last
         result.append(currentRoot)
-
 
     # ========================= DELETION OPERATIONS ==========================
 
@@ -488,7 +484,6 @@ class BstTree:
         elif node.getLeftChild() is not None and node.getRightChild() is not None:
             return 3
 
-
     # ========================= HEIGHT CALCULATION =============================
 
     def getHeightNode(self, node):
@@ -531,7 +526,6 @@ class BstTree:
         maxHeight = max(leftHeight, rightHeight)
         # Return height incremented by 1 to represent the edge to parent
         return maxHeight + 1
-
 
     # ========================= TREE VISUALIZATION =============================
 

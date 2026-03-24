@@ -33,7 +33,6 @@ class AvlTree:
         """
         return self.root
 
-
     # ========================= INSERTION OPERATIONS =========================
 
     def insert(self, node):
@@ -100,7 +99,6 @@ class AvlTree:
         # Rebalance the current subtree after insertion
         return self._rebalance(current)
 
-
     # ========================= DELETION OPERATIONS ==========================
 
     def cancelationNode(self, value):
@@ -110,13 +108,13 @@ class AvlTree:
             value (Object): value represents the node
         """
         self.root = self._cancelationNode(self.root, value)
-    
+
     def _cancelationNode(self, current, target):
-        #the tree exists?
+        # the tree exists?
         if current is None:
             return None
 
-        #the root is the node to cancel?
+        # the root is the node to cancel?
         if current == target:
             return None  # 💥 cortas todo el subárbol
 
@@ -131,7 +129,7 @@ class AvlTree:
             if newRight:
                 newRight.setParent(current)
 
-        #then update the height and rebalance the tree
+        # then update the height and rebalance the tree
         self._update_height(current)
         return self._rebalance(current)
 
@@ -173,14 +171,14 @@ class AvlTree:
             # Value not found in tree
             return None
 
-        if value.getValue() < current.getValue():
+        if value < current.getValue():
             # Search for value in the left subtree
             new_left = self._delete(current.getLeftChild(), value)
             current.setLeftChild(new_left)
             if new_left is not None:
                 new_left.setParent(current)
 
-        elif value.getValue() > current.getValue():
+        elif value > current.getValue():
             # Search for value in the right subtree
             new_right = self._delete(current.getRightChild(), value)
             current.setRightChild(new_right)
@@ -314,7 +312,6 @@ class AvlTree:
             node = node.getRightChild()
         return node
 
-
     # ========================= BALANCING OPERATIONS ==========================
 
     def rootWeight(self):
@@ -340,7 +337,11 @@ class AvlTree:
         if node is None:
             return 0
 
-        return 1 + self.nodeWeight(node.getLeftChild()) + self.nodeWeight(node.getRightChild())
+        return (
+            1
+            + self.nodeWeight(node.getLeftChild())
+            + self.nodeWeight(node.getRightChild())
+        )
 
     def _height(self, node):
         """
@@ -371,10 +372,8 @@ class AvlTree:
         """
         # Height is 1 plus the maximum height of the two children
         node.setHeight(
-            1 + max(
-                self._height(node.getLeftChild()),
-                self._height(node.getRightChild())
-            )
+            1
+            + max(self._height(node.getLeftChild()), self._height(node.getRightChild()))
         )
 
     def _balance_factor(self, node):
@@ -509,7 +508,6 @@ class AvlTree:
         self._update_height(new_root)
 
         return root
-    
 
     def _rotate_left_right(self, node):
         """
@@ -531,7 +529,6 @@ class AvlTree:
         new_left.setParent(node)
 
         return self._rotate_right(node)
-    
 
     def _rotate_right_left(self, node):
         """
@@ -594,7 +591,6 @@ class AvlTree:
 
         return new_root
 
-
     # ======================== AVL VALIDATION ================================
 
     def validate_avl(self):
@@ -611,6 +607,7 @@ class AvlTree:
         Returns:
             bool: True if the tree satisfies all AVL properties, False otherwise.
         """
+
         def _check(node):
             """
             Recursively check both BST and AVL properties for a subtree.
@@ -635,7 +632,6 @@ class AvlTree:
         # Check the entire tree starting from root
         ok, _ = _check(self.root)
         return ok
-
 
     # ======================== SEARCH OPERATIONS =============================
 
@@ -683,7 +679,6 @@ class AvlTree:
         # Search in the right subtree
         return self.__search(currentRoot.getRightChild(), value)
 
-
     # ======================== TREE TRAVERSALS ================================
 
     def breadthFirstSearch(self):
@@ -703,7 +698,7 @@ class AvlTree:
             return []
 
         # Initialize queue with root node
-        queue = Queue.Queue()
+        queue = Queue()
         queue.enqueue(self.root)
         result = []
 
@@ -829,7 +824,6 @@ class AvlTree:
         self.__posOrderTraversal(currentRoot.getRightChild(), result)
         # Process current node last
         result.append(currentRoot)
-
 
     # ======================== TREE VISUALIZATION =============================
 

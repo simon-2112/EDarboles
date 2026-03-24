@@ -23,14 +23,11 @@ def main():  # sourcery skip: extract-duplicate-method
 
     print("BFS:", tree.breadthFirstSearch())
 
-    print("InOrder:",
-        [node.getValue() for node in tree.inOrderTraversal()])
+    print("InOrder:", [node.getValue() for node in tree.inOrderTraversal()])
 
-    print("PreOrder:",
-        [node.getValue() for node in tree.preOrderTraversal()])
+    print("PreOrder:", [node.getValue() for node in tree.preOrderTraversal()])
 
-    print("PostOrder:",
-        [node.getValue() for node in tree.posOrderTraversal()])
+    print("PostOrder:", [node.getValue() for node in tree.posOrderTraversal()])
 
     print("\nAVL válido:", tree.validate_avl())
 
