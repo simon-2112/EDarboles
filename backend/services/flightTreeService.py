@@ -49,7 +49,10 @@ class TreeService:
             arrivalCity=data["destino"],
             departureDate=data["horaSalida"],
             price=data["precioBase"],
-            numberPassengers=data["pasajeros"]
+            numberPassengers=data["pasajeros"],
+            promotion=data["promocion"],
+            alert =data["alerta"],
+            priority=data["prioridad"]
         )
 
         node = Node(flight)
@@ -77,17 +80,25 @@ class TreeService:
                 arrivalCity=v["destino"],
                 departureDate=v["horaSalida"],
                 price=v["precioBase"],
-                numberPassengers=v["pasajeros"]
+                numberPassengers=v["pasajeros"],
+                promotion=v["promocion"],
+                alert =v["alerta"],
+                priority=v["prioridad"]
             )
             
-            node = Node(flight)
+            #we need 2 different nodes at the start because the node could have the same references and this can break the recursion
+            nodeAvl = Node(flight)
+            nodeBst = Node(flight)
 
-            self.avl.insert(node)
+            self.avl.insert(nodeAvl)
             #BST needs to be modified!!
-            # self.bst.insert(node)
+            self.bst.insert(nodeBst)
 
-    def toPrintConsole(self):
+    def toPrintAvl(self):
         self.avl.print_tree()
+    
+    def toPrintBst(self):
+        self.bst.print_tree()
 
     def insertFlight(self, flight):
         node = Node(flight)
@@ -112,6 +123,20 @@ class TreeService:
         self.avl.delete(node)
         return True
         
+    
+    def descendantsCancelation(self, flightCode):
+        if not flightCode:
+            return False
+        node  =  Node(Flight(idFlight=flightCode))
+        
+        
+        nodeToCancel = self.avl.search(node)
+        if(nodeToCancel is None):
+            return False
+        
+        self.avl.cancelationNode(nodeToCancel)
+        return True
+
     def _nodeToJson(self, node):
         if node is None:
             return None
@@ -125,6 +150,9 @@ class TreeService:
             "horaSalida": flight.getDepartureDate(),
             "precioBase": flight.getPrice(),
             "pasajeros": flight.getNumberPassengers(),
+            "prioridad": flight.getPriority(),
+            "alerta": flight.getAlert(),
+            "promocion": flight.getPromotion(),
             "izquierdo": self._nodeToJson(node.getLeftChild()),
             "derecho": self._nodeToJson(node.getRightChild())
         }

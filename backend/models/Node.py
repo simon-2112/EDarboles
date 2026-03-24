@@ -12,7 +12,7 @@ class Node:
         self._parent = None
         self._leftChild = None
         self._rightChild = None
-        self._height = 1  # For AVL balancing
+        self._height = 0  # For AVL balancing
 
     def getValue(self):
         return self._value

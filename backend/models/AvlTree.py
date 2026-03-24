@@ -103,6 +103,38 @@ class AvlTree:
 
     # ========================= DELETION OPERATIONS ==========================
 
+    def cancelationNode(self, value):
+        """_summary_
+
+        Args:
+            value (Object): value represents the node
+        """
+        self.root = self._cancelationNode(self.root, value)
+    
+    def _cancelationNode(self, current, target):
+        #the tree exists?
+        if current is None:
+            return None
+
+        #the root is the node to cancel?
+        if current == target:
+            return None  # 💥 cortas todo el subárbol
+
+        if target.getValue() < current.getValue():
+            newLeft = self._cancelationNode(current.getLeftChild(), target)
+            current.setLeftChild(newLeft)
+            if newLeft:
+                newLeft.setParent(current)
+        else:
+            newRight = self._cancelationNode(current.getRightChild(), target)
+            current.setRightChild(newRight)
+            if newRight:
+                newRight.setParent(current)
+
+        #then update the height and rebalance the tree
+        self._update_height(current)
+        return self._rebalance(current)
+
     def delete(self, value):
         """
         Delete a node with the given value from the AVL tree and rebalance.
@@ -324,7 +356,7 @@ class AvlTree:
             int: The height of the node, or 0 if the node is None.
         """
         # None nodes have height 0, otherwise get the node's stored height
-        return 0 if node is None else node.getHeight()
+        return -1 if node is None else node.getHeight()
 
     def _update_height(self, node):
         """
@@ -492,9 +524,11 @@ class AvlTree:
         Returns:
             Node: The new root of the subtree after the double rotation.
         """
-        node.setLeftChild(
-            self._rotate_left(node.getLeftChild())
-        )
+        left_child = node.getLeftChild()
+        new_left = self._rotate_left(left_child)
+
+        node.setLeftChild(new_left)
+        new_left.setParent(node)
 
         return self._rotate_right(node)
     
@@ -512,9 +546,12 @@ class AvlTree:
         Returns:
             Node: The new root of the subtree after the double rotation.
         """
-        node.setRightChild(
-            self._rotate_right(node.getRightChild())
-        )
+        right_child = node.getRightChild()
+        new_right = self._rotate_right(right_child)
+
+        node.setRightChild(new_right)
+        new_right.setParent(node)
+
         return self._rotate_left(node)
 
     def _update_rotation_parents(self, middle_subtree, old_root, new_root):
@@ -629,7 +666,7 @@ class AvlTree:
 
         Args:
             currentRoot (Node): The current node in the search (subtree root).
-            value: The value to search for.
+            value: value represents the node.
 
         Returns:
             Node: The node with the matching value, or None if not found in this subtree.

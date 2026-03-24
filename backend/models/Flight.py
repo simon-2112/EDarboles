@@ -19,12 +19,12 @@ class Flight:
         _arrivalDate (datetime): Date and time of arrival.
         _departureCity (str): Name of the departure city.
         _arrivalCity (str): Name of the arrival city.
-        _duration (float): Flight duration in hours.
+        _alert (boolean): If there are alerts.
     """
 
     def __init__(self, idFlight=None, numberPassengers=0, promotion=False, price=0.0,
                 priority=0, departureDate=None, departureCity="",
-                arrivalCity="", duration=0.0):
+                arrivalCity="", alert=False):
         """
         Initialize a Flight object with the provided parameters.
 
@@ -37,7 +37,7 @@ class Flight:
             departureDate (datetime, optional): Departure date and time. Defaults to None.
             departureCity (str, optional): Departure city name. Defaults to empty string.
             arrivalCity (str, optional): Arrival city name. Defaults to empty string.
-            duration (float, optional): Flight duration in hours. Defaults to 0.0.
+            alert (boolean, optional): Flight alert. Defaults False.
         """
         self._idFlight = idFlight
         self._numberPassengers = numberPassengers
@@ -47,7 +47,7 @@ class Flight:
         self._departureDate = departureDate
         self._departureCity = departureCity
         self._arrivalCity = arrivalCity
-        self._duration = duration
+        self._alert = alert
 
     # ======================== GETTERS ================================
 
@@ -83,9 +83,9 @@ class Flight:
         """Get the arrival city name."""
         return self._arrivalCity
 
-    def getDuration(self):
+    def getAlert(self):
         """Get the flight duration in hours."""
-        return self._duration
+        return self._alert
 
     # ======================== SETTERS ================================
 
@@ -165,19 +165,8 @@ class Flight:
         """
         self._arrivalCity = arrivalCity
 
-    def setDuration(self, duration):
-        """
-        Set the flight duration in hours.
-
-        Args:
-            duration (float): Duration in hours. Should be non-negative.
-
-        Raises:
-            ValueError: If duration is negative.
-        """
-        if duration < 0:
-            raise ValueError("Duration cannot be negative.")
-        self._duration = duration
+    def setAlert(self, alert):
+        self._alert = alert
 
     # ======================== UTILITY METHODS ================================
 

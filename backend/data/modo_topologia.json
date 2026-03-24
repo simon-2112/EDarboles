@@ -60,9 +60,11 @@
           "altura": 1,
           "factorEquilibrio": 0,
           "izquierdo": null,
-          "derecho": null
+          "derecho": null,
+          "prioridad": 1
         },
-        "derecho": null
+        "derecho": null,
+        "prioridad": 3
       },
       "derecho": {
         "codigo": 250,
@@ -90,9 +92,12 @@
           "altura": 1,
           "factorEquilibrio": 0,
           "izquierdo": null,
-          "derecho": null
-        }
-      }
+          "derecho": null,
+          "prioridad": 2
+        },
+        "prioridad": 3
+      },
+      "prioridad": 2
     },
     "derecho": {
       "codigo": 400,
@@ -131,9 +136,11 @@
           "altura": 1,
           "factorEquilibrio": 0,
           "izquierdo": null,
-          "derecho": null
+          "derecho": null,
+          "prioridad": 1
         },
-        "derecho": null
+        "derecho": null,
+        "prioridad": 3
       },
       "derecho": {
         "codigo": 450,
@@ -161,10 +168,14 @@
           "altura": 1,
           "factorEquilibrio": 0,
           "izquierdo": null,
-          "derecho": null
-        }
-      }
-    }
+          "derecho": null,
+          "prioridad": 2
+        },
+        "prioridad": 1
+      },
+      "prioridad": 3
+    },
+    "prioridad": 3
   },
   "derecho": {
     "codigo": 700,
@@ -215,9 +226,11 @@
           "altura": 1,
           "factorEquilibrio": 0,
           "izquierdo": null,
-          "derecho": null
+          "derecho": null,
+          "prioridad": 1
         },
-        "derecho": null
+        "derecho": null,
+        "prioridad": 2
       },
       "derecho": {
         "codigo": 650,
@@ -245,9 +258,12 @@
           "altura": 1,
           "factorEquilibrio": 0,
           "izquierdo": null,
-          "derecho": null
-        }
-      }
+          "derecho": null,
+          "prioridad": 2
+        },
+        "prioridad": 2
+      },
+      "prioridad": 1
     },
     "derecho": {
       "codigo": 800,
@@ -286,9 +302,11 @@
           "altura": 1,
           "factorEquilibrio": 0,
           "izquierdo": null,
-          "derecho": null
+          "derecho": null,
+          "prioridad": 1
         },
-        "derecho": null
+        "derecho": null,
+        "prioridad": 2
       },
       "derecho": {
         "codigo": 900,
@@ -316,9 +334,14 @@
           "altura": 1,
           "factorEquilibrio": 0,
           "izquierdo": null,
-          "derecho": null
-        }
-      }
-    }
-  }
+          "derecho": null,
+          "prioridad": 1
+        },
+        "prioridad": 2
+      },
+      "prioridad": 3
+    },
+    "prioridad": 1
+  },
+  "prioridad": 3
 }

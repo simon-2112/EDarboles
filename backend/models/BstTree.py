@@ -133,10 +133,10 @@ class BstTree:
         Returns:
             Node: The node with the matching value, or None if not found in this subtree.
         """
-        if currentRoot.getValue() == value:
+        if currentRoot.getValue() == value.getValue():
             # Found the target value
             return currentRoot
-        elif value > currentRoot.getValue():
+        elif value.getValue() > currentRoot.getValue():
             # Value is larger, search in the right subtree
             if currentRoot.getRightChild() is None:
                 # No right child - value not found in this path
