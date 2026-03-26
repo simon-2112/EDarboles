@@ -525,7 +525,7 @@ def audit_avl():
 
         return jsonify({
             "status": "success",
-            "message": "Auditoría AVL completada",
+            "message": "AVL auditory complete",
             "report": result["treeReport"],
             "inconsistentNodes": result["inconsistentNodes"]
         }), 200
@@ -535,3 +535,35 @@ def audit_avl():
             "status": "error",
             "message": str(e)
         }), 400 
+    
+
+#SMART DELETE
+@tree_bp.route("/profit/deleteLowest", methods=["POST"])
+def delete_lowest_profit():
+    """
+    Elimina el vuelo de menor rentabilidad según reglas de negocio:
+    - rentabilidad = pasajeros * precioFinal - promoción - penalización
+    - desempates por profundidad y código
+    - cancela toda la subrama
+    """
+    try:
+        flight_code = service.deleteLowestProfitFlight()
+
+        if flight_code is None:
+            return jsonify({
+                "status": "warning",
+                "message": "There are not Flights",
+                "tree": service.getTreeJson()
+            }), 200
+
+        return jsonify({
+            "status": "success",
+            "message": f"Flight cancel: {flight_code}",
+            "tree": service.getTreeJson()
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 400

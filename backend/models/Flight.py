@@ -171,13 +171,10 @@ class Flight:
         """
         Calculate the final ticket price after applying the promotional discount.
 
-        Formula: finalPrice = price * (1 - promotion/100)
-
         Returns:
             float: The final ticket price after discount.
         """
-        discountFactor = 1 - (self._promotion / 100)
-        price = self._price * discountFactor
+        price = self._price
         
         if isCritical:
             price *= 1.25

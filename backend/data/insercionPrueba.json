@@ -5,7 +5,7 @@
     {"codigo":"SB400","origen":"Medellin","destino":"Cartagena","horaSalida":"10:00","precioBase":400,"pasajeros":120,"prioridad":2,"promocion":false,"alerta":false},
     {"codigo":"SB250","origen":"Bogota","destino":"Cali","horaSalida":"08:00","precioBase":350,"pasajeros":90,"prioridad":1,"promocion":true,"alerta":false},
     {"codigo":"SB150","origen":"Bogota","destino":"Pereira","horaSalida":"07:00","precioBase":280,"pasajeros":70,"prioridad":3,"promocion":false,"alerta":false},
-    {"codigo":"SB120","origen":"Cucuta","destino":"Bogota","horaSalida":"06:00","precioBase":260,"pasajeros":65,"prioridad":2,"promocion":false,"alerta":false},
-    {"codigo":"SB110","origen":"Cucuta","destino":"Bogota","horaSalida":"06:00","precioBase":260,"pasajeros":65,"prioridad":2,"promocion":false,"alerta":false}
+    {"codigo":"SB120","origen":"Cucuta","destino":"Bogota","horaSalida":"06:00","precioBase":260,"pasajeros":10,"prioridad":2,"promocion":true,"alerta":false},
+    {"codigo":"SB110","origen":"Cucuta","destino":"Bogota","horaSalida":"06:00","precioBase":260,"pasajeros":65,"prioridad":2,"promocion":true,"alerta":false}
   ]
 }

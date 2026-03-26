@@ -11,6 +11,7 @@ from services.metricsService import MetricsService
 from services.stressModeService import StressService
 from services.penaltyService import PenaltyService
 from services.auditoryService import AuditoryService
+from services.profitService import ProfitService
 
 
 class TreeService:
@@ -32,6 +33,7 @@ class TreeService:
         self.stressService = StressService(self)
         self.penaltyService = PenaltyService(self)
         self.auditoryService = AuditoryService(self)
+        self.profitService = ProfitService(self)
     
     def createTree(self, data):
         self.saveState()
@@ -254,3 +256,6 @@ class TreeService:
     #touch the button verify avl properties. Only with stress mode active.
     def getAuditAVL(self):
         return self.auditoryService.auditAVL()
+    
+    def deleteLowestProfitFlight(self):
+        return self.profitService.deleteLowestProfitFlight()

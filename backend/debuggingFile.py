@@ -15,10 +15,9 @@ def main():
     service.createTree(data)
     service.toPrintAvl()
     print()
-    stress.activateStress()
-    service.deleteFlight("SB400")
-    service.deleteFlight("SB150")
-    service.toPrintAvl()
+    print("este es el candidato final:      ", service.deleteLowestProfitFlight())
+    print()
+    
 
 
 if __name__ == "__main__":
