@@ -16,14 +16,13 @@ class Flight:
         _price (float): Base ticket price in currency units.
         _priority (int): Priority level calculated based on flight criteria.
         _departureDate (datetime): Date and time of departure.
-        _arrivalDate (datetime): Date and time of arrival.
         _departureCity (str): Name of the departure city.
         _arrivalCity (str): Name of the arrival city.
         _alert (boolean): If there are alerts.
     """
 
     def __init__(self, idFlight=None, numberPassengers=0, promotion=False, price=0.0,
-                priority=0, departureDate=None, departureCity="",
+                priority=0, departureDate= "00:00", departureCity="",
                 arrivalCity="", alert=False):
         """
         Initialize a Flight object with the provided parameters.
@@ -84,7 +83,6 @@ class Flight:
         return self._arrivalCity
 
     def getAlert(self):
-        """Get the flight duration in hours."""
         return self._alert
 
     # ======================== SETTERS ================================
@@ -230,8 +228,8 @@ class Flight:
         # Check if all required fields are set
         if self._idFlight is None:
             return False
-        if self._departureDate is None or self._arrivalDate is None:
-            return False
+        # if self._departureDate is None or self._arrivalDate is None:
+        #     return False
         if not self._departureCity or not self._arrivalCity:
             return False
         if self._price is None or self._price < 0:
@@ -240,8 +238,8 @@ class Flight:
             return False
 
         # Check if departure is before arrival
-        if self._departureDate >= self._arrivalDate:
-            return False
+        # if self._departureDate >= self._arrivalDate:
+        #     return False
 
         # Check if departure and arrival cities are different
         return self._departureCity != self._arrivalCity
@@ -261,12 +259,12 @@ class Flight:
             "promotion": self._promotion,
             "price": self._price,
             "priority": self._priority,
-            "departureDate": self._departureDate.isoformat() if self._departureDate else None,
+            "departureDate": self._departureDate,
             "departureCity": self._departureCity,
             "arrivalCity": self._arrivalCity,
-            "duration": self._duration,
             "finalPrice": self.calculateFinalPrice(),
-            "totalRevenue": self.calculateTotalRevenue()
+            "totalRevenue": self.calculateTotalRevenue(),
+            "alert": self._alert
         }
 
     def toJSONString(self):
@@ -296,11 +294,20 @@ class Flight:
         Returns:
             str: Detailed flight information.
         """
-        return (f"Flight(idFlight={self._idFlight}, numberPassengers={self._numberPassengers}, "
-                f"promotion={self._promotion}, price={self._price}, priority={self._priority}, "
-                f"departureDate={self._departureDate},"
-                f"departureCity={self._departureCity}, arrivalCity={self._arrivalCity}, "
-                f"duration={self._duration})")
+        return (
+        f"Flight("
+        f"idFlight={self._idFlight}, "
+        f"numberPassengers={self._numberPassengers}, "
+        f"promotion={self._promotion}, "
+        f"price={self._price}, "
+        f"Totalprice={self.calculateFinalPrice()}, "
+        f"priority={self._priority}, "
+        f"departureDate={self._departureDate}, "
+        f"departureCity='{self._departureCity}', "
+        f"arrivalCity='{self._arrivalCity}', "
+        f"alert='{self._alert}', "
+        f")"
+    )
 
     def _get_numeric_id(self):
         """

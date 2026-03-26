@@ -21,8 +21,16 @@ class AvlTree:
         Initialize an empty AVL tree.
 
         Creates a new AVL tree with no root node. The tree is ready to accept insertions.
+        rotations: will be a counter rotations, for metrics purposes
         """
         self.root = None
+        
+        self.rotations = {
+            "LL": 0,
+            "RR": 0,
+            "LR": 0,
+            "RL": 0
+        }
 
     def getRoot(self):
         """
@@ -343,7 +351,7 @@ class AvlTree:
             + self.nodeWeight(node.getRightChild())
         )
 
-    def _height(self, node):
+    def getHeight(self, node):
         """
         Get the height of a node in the tree.
 
@@ -373,10 +381,10 @@ class AvlTree:
         # Height is 1 plus the maximum height of the two children
         node.setHeight(
             1
-            + max(self._height(node.getLeftChild()), self._height(node.getRightChild()))
+            + max(self.getHeight(node.getLeftChild()), self.getHeight(node.getRightChild()))
         )
 
-    def _balance_factor(self, node):
+    def balance_factor(self, node):
         """
         Calculate the balance factor of a node.
 
@@ -393,7 +401,7 @@ class AvlTree:
         if node is None:
             return 0
         # Balance factor = left height - right height
-        return self._height(node.getLeftChild()) - self._height(node.getRightChild())
+        return self.getHeight(node.getLeftChild()) - self.getHeight(node.getRightChild())
 
     def _rebalance(self, node):
         """
@@ -409,26 +417,30 @@ class AvlTree:
 
         self._update_height(node)
 
-        bf = self._balance_factor(node)
+        bf = self.balance_factor(node)
 
         # LEFT HEAVY
         if bf > 1:
 
             # LEFT-RIGHT CASE
-            if self._balance_factor(node.getLeftChild()) < 0:
+            if self.balance_factor(node.getLeftChild()) < 0:
+                self.rotations["LR"] += 1
                 return self._rotate_left_right(node)
 
             # LEFT-LEFT CASE
+            self.rotations["LL"] += 1
             return self._rotate_right(node)
 
         # RIGHT HEAVY
         if bf < -1:
 
             # RIGHT-LEFT CASE
-            if self._balance_factor(node.getRightChild()) > 0:
+            if self.balance_factor(node.getRightChild()) > 0:
+                self.rotations["RL"] += 1
                 return self._rotate_right_left(node)
 
             # RIGHT-RIGHT CASE
+            self.rotations["RR"] += 1
             return self._rotate_left(node)
 
         return node
@@ -522,6 +534,7 @@ class AvlTree:
         Returns:
             Node: The new root of the subtree after the double rotation.
         """
+        
         left_child = node.getLeftChild()
         new_left = self._rotate_left(left_child)
 
@@ -705,7 +718,7 @@ class AvlTree:
         # Process nodes level by level
         while not queue.isEmpty():
             node = queue.dequeue()
-            result.append(node.getValue())
+            result.append(node.getValue().toJSON())
 
             # Enqueue left child if it exists
             if node.getLeftChild() is not None:
@@ -746,7 +759,8 @@ class AvlTree:
             return
 
         # Process current node first
-        result.append(currentRoot)
+        #ATTENTION -> THERE ARE FLIGHTS SO, WE PARSE IT TO JSON FORMAT, BUT WE CAN DO IT IN OTHER FUNCTION OUTSIDE
+        result.append(currentRoot.getValue().toJSON())
         # Then traverse left subtree
         self.__preOrderTraversal(currentRoot.getLeftChild(), result)
         # Then traverse right subtree
@@ -785,7 +799,8 @@ class AvlTree:
         # Traverse left subtree first
         self.__inOrderTraversal(currentRoot.getLeftChild(), result)
         # Process current node
-        result.append(currentRoot)
+        #ATTENTION -> THERE ARE FLIGHTS SO, WE PARSE IT TO JSON FORMAT, BUT WE CAN DO IT IN OTHER FUNCTION OUTSIDE
+        result.append(currentRoot.getValue().toJSON())
         # Then traverse right subtree
         self.__inOrderTraversal(currentRoot.getRightChild(), result)
 
@@ -823,7 +838,22 @@ class AvlTree:
         # Then traverse right subtree
         self.__posOrderTraversal(currentRoot.getRightChild(), result)
         # Process current node last
-        result.append(currentRoot)
+        #ATTENTION -> THERE ARE FLIGHTS SO, WE PARSE IT TO JSON FORMAT, BUT WE CAN DO IT IN OTHER FUNCTION OUTSIDE
+        result.append(currentRoot.getValue().toJSON())
+        
+    
+    #count the total of (leaf)
+    def countLeaves(self, node):
+        if node is None:
+            return 0
+
+        if node.getLeftChild() is None and node.getRightChild() is None:
+            return 1
+
+        return (
+            self.countLeaves(node.getLeftChild()) +
+            self.countLeaves(node.getRightChild())
+        )
 
     # ======================== TREE VISUALIZATION =============================
 

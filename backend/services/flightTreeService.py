@@ -5,6 +5,9 @@ from models.Flight import Flight
 from models.Node import Node
 from models.Stack import Stack
 from copy import deepcopy
+from services.versionService import VersionService
+from services.queueService import QueueService
+from services.metricsService import MetricsService
 from datetime import datetime
 
 
@@ -16,9 +19,13 @@ class TreeService:
     because it violates the Stack structure. (so this is a little inefficient way)
     """
     def __init__(self):
+        self.totalCancelations = 0
         self.avl = AvlTree()
         self.bst = BstTree()
         self.history = Stack()
+        self.versionService = VersionService()
+        self.queueService = QueueService() #concurrence simulation
+        self.metricsService = MetricsService()
     
     # data = readJson("../data/modo_topologia.json"); #this is only for test purposes, data is obtained from the frontend
     def createTree(self, data):
@@ -133,12 +140,12 @@ class TreeService:
             return False
         node  =  Node(Flight(idFlight=flightCode))
         
-        
         nodeToCancel = self.avl.search(node)
         if(nodeToCancel is None):
             return False
         
         self.saveState()
+        self.totalCancelations += 1
         self.avl.cancelationNode(nodeToCancel)
         return True
     
@@ -164,6 +171,9 @@ class TreeService:
             return None
 
         flight = node.getValue()
+        height = node.getHeight()
+        balance = self.avl.balance_factor(node)
+        finalPrice = flight.calculateFinalPrice()
 
         return {
             "codigo": flight.getIdFlight(),
@@ -171,10 +181,15 @@ class TreeService:
             "destino": flight.getArrivalCity(),
             "horaSalida": flight.getDepartureDate(),
             "precioBase": flight.getPrice(),
+            "precioFinal": finalPrice,
             "pasajeros": flight.getNumberPassengers(),
             "prioridad": flight.getPriority(),
-            "alerta": flight.getAlert(),
             "promocion": flight.getPromotion(),
+            "alerta": flight.getAlert(),
+            
+            "altura": height,
+            "factorEquilibrio": balance,
+            
             "izquierdo": self.nodeToJson(node.getLeftChild()),
             "derecho": self.nodeToJson(node.getRightChild())
         }
@@ -183,3 +198,38 @@ class TreeService:
     def getTreeJson(self):
         return self.nodeToJson(self.avl.root)
     
+    
+    
+    #does the same that getTreeJson method..??
+    def exportTree(self):
+        return self.nodeToJson(self.avl.root)
+    
+    
+    #this part is to save a version (version button with the name version).
+    def saveVersion(self, name):
+        self.versionService.saveVersion(name, self.avl)
+
+    def loadVersion(self, name):
+        version = self.versionService.loadVersion(name)
+
+        if version is None:
+            return False
+
+        self.saveState()
+        self.avl = version
+        return True
+
+    def getVersions(self):
+        return self.versionService.getAllVersions()
+    
+    
+    #this part is for the simulation of concurrence
+    def enqueueFlight(self, flight):
+        self.queueService.enqueueFlight(flight)
+
+    def processQueue(self):
+        return self.queueService.processQueue(self)
+    
+    
+    def getMetrics(self):
+        return self.metricsService.getMetrics(self)

@@ -37,7 +37,6 @@ def get_tree():
             "message": str(e)
         }), 400
 
-#to create a tree
 @tree_bp.route("/create", methods=["POST"])
 def create_tree():
     data = request.get_json()
@@ -87,7 +86,6 @@ def cancel_subtree(flightCode):
         }), 400
 
 
-#to insert a flight
 @tree_bp.route("/insert", methods=["POST"])
 def insert_flight():
     data = request.get_json()
@@ -120,7 +118,6 @@ def insert_flight():
         }), 400
         
 
-#to search a flight
 @tree_bp.route("/search/<flightCode>", methods=["GET"])
 def search_flight(flightCode):
     try:
@@ -142,7 +139,6 @@ def search_flight(flightCode):
             "message": str(e)
         }), 400
 
-#to delete a flight
 @tree_bp.route("/delete/<flightCode>", methods=["DELETE"])
 def delete_flight(flightCode):
     try:
@@ -165,14 +161,11 @@ def delete_flight(flightCode):
             "message": str(e)
         }), 400
 
-
-#to update a flight completely
 @tree_bp.route("/update/<flightCode>", methods=["PUT"])
 def update_flight(flightCode):
     data = request.get_json()
 
     try:
-        # eliminar
         deleted = service.deleteFlight(flightCode)
 
         if not deleted:
@@ -250,4 +243,155 @@ def undo():
             "status": "error",
             "message": str(e)
         }), 400
+        
+    
 
+#EXPORT TREE
+
+@tree_bp.route("/export", methods=["GET"])
+def export_tree():
+    try:
+        result = service.exportTree()
+
+        return jsonify({
+            "status": "success",
+            "data": result
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 400
+
+#PERSISTENCE AND VERSIONS
+    """
+    it need a entry from data like:
+    {
+        "name": "version 1 to my dad"
+    }
+    
+    """
+@tree_bp.route("/version/save", methods=["POST"])
+def save_version():
+    data = request.get_json()
+
+    try:
+        name = data["name"]
+        service.saveVersion(name)
+
+        return jsonify({
+            "status": "success",
+            "message": f"Version '{name}' saved"
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 400
+
+@tree_bp.route("/version/load/<name>", methods=["POST"])
+def load_version(name):
+    try:
+        if success := service.loadVersion(name):
+            return jsonify({
+                "status": "success",
+                "message": f"Version '{name}' loaded",
+                "data": service.getTreeJson()
+            }), 200
+
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "Version not found"
+            }), 404
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 400
+        
+
+@tree_bp.route("/version", methods=["GET"])
+def get_versions():
+    try:
+        versions = service.getVersions()
+
+        return jsonify({
+            "status": "success",
+            "data": versions
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 400
+
+#CONCURRENCE SIMULATION
+@tree_bp.route("/queue/enqueue", methods=["POST"])
+def enqueue_flight():
+    data = request.get_json()
+
+    try:
+        flight = Flight(
+            idFlight=data["codigo"],
+            departureCity=data["origen"],
+            arrivalCity=data["destino"],
+            departureDate=data["horaSalida"],
+            price=data["precioBase"],
+            numberPassengers=data["pasajeros"],
+            promotion=data["promocion"],
+            alert=data["alerta"],
+            priority=data["prioridad"]
+        )
+
+        service.enqueueFlight(flight)
+
+        return jsonify({
+            "status": "success",
+            "message": "Flight added to queue"
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 400
+        
+
+@tree_bp.route("/queue/process", methods=["POST"])
+def process_queue():
+    try:
+        steps = service.processQueue()
+
+        return jsonify({
+            "status": "success",
+            "steps": steps
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 400
+        
+
+#METRICS OF THE TREE
+@tree_bp.route("/metrics", methods=["GET"])
+def get_metrics():
+    try:
+        metrics = service.getMetrics()
+
+        return jsonify({
+            "status": "success",
+            "data": metrics
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 400

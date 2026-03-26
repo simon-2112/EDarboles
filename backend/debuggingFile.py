@@ -8,18 +8,15 @@ import json
 def main():
     # pass
     service = TreeService()
-    data = readJson(".data/insercionPrueba.json")
+    data = readJson("./data/insercionPrueba.json")
     # this is only for test purposes, data is obtained from the frontend
     service.createTree(data)
     service.toPrintAvl()
-    print()
-    # lugar donde cancelaré nodos
-
-    service.descendantsCancelation("SB120")
-    print()
-    print()
+    
 
     service.toPrintAvl()
+    
+    print(service.getMetrics())
 
 
 if __name__ == "__main__":
