@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SkyBalance AVL - Sistema de Gestión</title>
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/app.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
 </head>
+
 <body>
     <!-- Header -->
     <header class="app-header">
@@ -51,7 +54,7 @@
                     <input type="number" id="input-precio" placeholder="Precio Base" min="0" required>
                     <input type="number" id="input-pasajeros" placeholder="Pasajeros" min="0" required>
                     <input type="number" id="input-prioridad" placeholder="Prioridad (1-3)" min="1" max="3" required>
-                    
+
                     <div class="checkbox-group">
                         <label>
                             <input type="checkbox" id="input-promocion">
@@ -62,7 +65,7 @@
                             <span>Alerta</span>
                         </label>
                     </div>
-                    
+
                     <button type="submit" class="btn btn-success btn-block">Insertar</button>
                 </form>
             </div>
@@ -73,7 +76,8 @@
                     <input type="text" id="input-delete-codigo" placeholder="Código del vuelo">
                     <button class="btn btn-warning btn-block" id="btn-delete">Eliminar Nodo</button>
                     <button class="btn btn-danger btn-block" id="btn-cancel">Cancelar Vuelo + Descendientes</button>
-                    <button class="btn btn-purple btn-block" id="btn-delete-rental-node">Eliminar Nodo Menor Rentabilidad</button>
+                    <button class="btn btn-purple btn-block" id="btn-delete-rental-node">Eliminar Nodo Menor
+                        Rentabilidad</button>
                 </div>
             </div>
 
@@ -225,7 +229,10 @@
     <!-- Toast Notifications -->
     <div class="toast-container" id="toast-container"></div>
 
-    <!-- Scripts -->
-    <script type="module" src="js/app-main.js"></script>
+    <!-- Scripts (order matters) -->
+    <script src="js/api-client.js"></script>
+    <script src="js/tree-visualizer.js"></script>
+    <script src="js/app-main.js"></script>
 </body>
+
 </html>
