@@ -40,10 +40,20 @@ class AvlTree:
             Node: The root node of the tree, or None if the tree is empty.
         """
         return self.root
+    
+    def getRotationStats(self):
+        return self.rotations
 
+    def resetRotationStats(self):
+        self.rotations  = {
+            "LL": 0,
+            "RR": 0,
+            "LR": 0,
+            "RL": 0
+        }
     # ========================= INSERTION OPERATIONS =========================
 
-    def insert(self, node):
+    def insert(self, node, rebalance = True):
         """
         Insert a new node into the AVL tree and rebalance if necessary.
 
@@ -62,9 +72,9 @@ class AvlTree:
             return
 
         # Recursively insert the node starting from the root
-        self.root = self._insert(self.root, node)
+        self.root = self._insert(self.root, node, rebalance)
 
-    def _insert(self, current, node):
+    def _insert(self, current, node, rebalance):
         """
         Recursively insert a node into the tree starting from a given node.
 
@@ -91,7 +101,7 @@ class AvlTree:
                 node.setParent(current)
             else:
                 # Recursively insert into the left subtree
-                child_root = self._insert(current.getLeftChild(), node)
+                child_root = self._insert(current.getLeftChild(), node, rebalance)
                 current.setLeftChild(child_root)
                 child_root.setParent(current)
         elif current.getRightChild() is None:
@@ -100,48 +110,48 @@ class AvlTree:
             node.setParent(current)
         else:
             # Recursively insert into the right subtree
-            child_root = self._insert(current.getRightChild(), node)
+            child_root = self._insert(current.getRightChild(), node, rebalance)
             current.setRightChild(child_root)
             child_root.setParent(current)
 
         # Rebalance the current subtree after insertion
-        return self._rebalance(current)
+        return self._rebalance(current) if rebalance else current
 
     # ========================= DELETION OPERATIONS ==========================
 
-    def cancelationNode(self, value):
+    def cancelationNode(self, value, rebalance=True):
         """_summary_
 
         Args:
             value (Object): value represents the node
         """
-        self.root = self._cancelationNode(self.root, value)
+        self.root = self._cancelationNode(self.root, value, rebalance)
 
-    def _cancelationNode(self, current, target):
+    def _cancelationNode(self, current, target, rebalance):
         # the tree exists?
         if current is None:
             return None
 
         # the root is the node to cancel?
-        if current == target:
-            return None  # 💥 cortas todo el subárbol
+        if current.getValue() == target.getValue():
+            return None  
 
         if target.getValue() < current.getValue():
-            newLeft = self._cancelationNode(current.getLeftChild(), target)
+            newLeft = self._cancelationNode(current.getLeftChild(), target, rebalance)
             current.setLeftChild(newLeft)
             if newLeft:
                 newLeft.setParent(current)
         else:
-            newRight = self._cancelationNode(current.getRightChild(), target)
+            newRight = self._cancelationNode(current.getRightChild(), target, rebalance)
             current.setRightChild(newRight)
             if newRight:
                 newRight.setParent(current)
 
         # then update the height and rebalance the tree
         self._update_height(current)
-        return self._rebalance(current)
+        return self._rebalance(current) if rebalance else current
 
-    def delete(self, value):
+    def delete(self, value, rebalance = True):
         """
         Delete a node with the given value from the AVL tree and rebalance.
 
@@ -154,12 +164,12 @@ class AvlTree:
 
         Time Complexity: O(log n) - Search, deletion, and rotation operations take logarithmic time.
         """
-        self.root = self._delete(self.root, value)
+        self.root = self._delete(self.root, value, rebalance)
         # Ensure root parent pointer is None (in case root changed during deletion)
         if self.root is not None:
             self.root.setParent(None)
 
-    def _delete(self, current, value):
+    def _delete(self, current, value, rebalance):
         """
         Recursively delete a node with the given value from the subtree.
 
@@ -179,28 +189,28 @@ class AvlTree:
             # Value not found in tree
             return None
 
-        if value < current.getValue():
+        if value.getValue() < current.getValue():
             # Search for value in the left subtree
-            new_left = self._delete(current.getLeftChild(), value)
+            new_left = self._delete(current.getLeftChild(), value, rebalance)
             current.setLeftChild(new_left)
             if new_left is not None:
                 new_left.setParent(current)
 
-        elif value > current.getValue():
+        elif value.getValue() > current.getValue():
             # Search for value in the right subtree
-            new_right = self._delete(current.getRightChild(), value)
+            new_right = self._delete(current.getRightChild(), value, rebalance)
             current.setRightChild(new_right)
             if new_right is not None:
                 new_right.setParent(current)
 
         else:
             # Found the node to delete
-            return self._delete_node(current)
+            return self._delete_node(current, rebalance)
 
         # Rebalance the current subtree after deletion
-        return self._rebalance(current)
+        return self._rebalance(current) if rebalance else current
 
-    def _delete_node(self, node):
+    def _delete_node(self, node, rebalance):
         """
         Handle the actual deletion of a node, considering three cases.
 
@@ -225,7 +235,7 @@ class AvlTree:
             return self._replace_with_left_child(node)
 
         # Node has two children - use in-order predecessor approach
-        return self._delete_with_two_children(node)
+        return self._delete_with_two_children(node, rebalance)
 
     def _replace_with_right_child(self, node):
         """
@@ -269,7 +279,7 @@ class AvlTree:
 
         return child
 
-    def _delete_with_two_children(self, node):
+    def _delete_with_two_children(self, node, rebalance):
         """
         Delete a node that has both left and right children.
 
@@ -292,7 +302,7 @@ class AvlTree:
         node.setValue(pred.getValue())
 
         # Recursively delete the predecessor from the left subtree
-        new_left = self._delete(node.getLeftChild(), pred.getValue())
+        new_left = self._delete(node.getLeftChild(), pred.getValue(), rebalance)
 
         node.setLeftChild(new_left)
 
@@ -718,7 +728,7 @@ class AvlTree:
         # Process nodes level by level
         while not queue.isEmpty():
             node = queue.dequeue()
-            result.append(node.getValue().toJSON())
+            result.append(node.getValue())
 
             # Enqueue left child if it exists
             if node.getLeftChild() is not None:
@@ -728,6 +738,10 @@ class AvlTree:
                 queue.enqueue(node.getRightChild())
 
         return result
+
+    def breadthFirstSearchJSON(self):
+        flights = self.breadthFirstSearch()
+        return [flight.toJSON() for flight in flights]
 
     def preOrderTraversal(self):
         """
@@ -759,12 +773,16 @@ class AvlTree:
             return
 
         # Process current node first
-        #ATTENTION -> THERE ARE FLIGHTS SO, WE PARSE IT TO JSON FORMAT, BUT WE CAN DO IT IN OTHER FUNCTION OUTSIDE
-        result.append(currentRoot.getValue().toJSON())
+        result.append(currentRoot.getValue())
         # Then traverse left subtree
         self.__preOrderTraversal(currentRoot.getLeftChild(), result)
         # Then traverse right subtree
         self.__preOrderTraversal(currentRoot.getRightChild(), result)
+        
+    
+    def getPreOrderJSON(self):
+        flights = self.preOrderTraversal()
+        return [flight.toJSON() for flight in flights]
 
     def inOrderTraversal(self):
         """
@@ -799,10 +817,13 @@ class AvlTree:
         # Traverse left subtree first
         self.__inOrderTraversal(currentRoot.getLeftChild(), result)
         # Process current node
-        #ATTENTION -> THERE ARE FLIGHTS SO, WE PARSE IT TO JSON FORMAT, BUT WE CAN DO IT IN OTHER FUNCTION OUTSIDE
-        result.append(currentRoot.getValue().toJSON())
+        result.append(currentRoot.getValue())
         # Then traverse right subtree
         self.__inOrderTraversal(currentRoot.getRightChild(), result)
+    
+    def getInOrderJSON(self):
+        flights = self.inOrderTraversal()
+        return [flight.toJSON() for flight in flights]
 
     def posOrderTraversal(self):
         """
@@ -838,9 +859,12 @@ class AvlTree:
         # Then traverse right subtree
         self.__posOrderTraversal(currentRoot.getRightChild(), result)
         # Process current node last
-        #ATTENTION -> THERE ARE FLIGHTS SO, WE PARSE IT TO JSON FORMAT, BUT WE CAN DO IT IN OTHER FUNCTION OUTSIDE
-        result.append(currentRoot.getValue().toJSON())
+        result.append(currentRoot.getValue())
         
+    
+    def getPosOrderJSON(self):
+        flights = self.posOrderTraversal()
+        return [flight.toJSON() for flight in flights]
     
     #count the total of (leaf)
     def countLeaves(self, node):
@@ -854,6 +878,19 @@ class AvlTree:
             self.countLeaves(node.getLeftChild()) +
             self.countLeaves(node.getRightChild())
         )
+        
+    
+    def clear(self):
+        """
+        Removes all nodes from the tree.
+
+        This method resets the AVL tree to an empty state by removing
+        the root reference. Python's garbage collector will take care
+        of cleaning up the orphaned nodes.
+
+        Time Complexity: O(1)
+        """
+        self.root = None
 
     # ======================== TREE VISUALIZATION =============================
 

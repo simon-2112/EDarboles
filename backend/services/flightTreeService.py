@@ -8,6 +8,7 @@ from copy import deepcopy
 from services.versionService import VersionService
 from services.queueService import QueueService
 from services.metricsService import MetricsService
+from services.stressModeService import StressService
 from datetime import datetime
 
 
@@ -20,12 +21,14 @@ class TreeService:
     """
     def __init__(self):
         self.totalCancelations = 0
+        self.stressMode = False
         self.avl = AvlTree()
         self.bst = BstTree()
         self.history = Stack()
         self.versionService = VersionService()
         self.queueService = QueueService() #concurrence simulation
         self.metricsService = MetricsService()
+        self.stressService = StressService(self)
     
     # data = readJson("../data/modo_topologia.json"); #this is only for test purposes, data is obtained from the frontend
     def createTree(self, data):
@@ -112,7 +115,7 @@ class TreeService:
     def insertFlight(self, flight):
         self.saveState()
         node = Node(flight)
-        self.avl.insert(node)
+        self.avl.insert(node, rebalance=not self.stressMode)
     
     def searchFlight(self, flightCode):
         if not flightCode:
@@ -131,7 +134,7 @@ class TreeService:
             return False
 
         self.saveState()
-        self.avl.delete(node)
+        self.avl.delete(node, rebalance=not self.stressMode)
         return True
         
     
@@ -146,7 +149,7 @@ class TreeService:
         
         self.saveState()
         self.totalCancelations += 1
-        self.avl.cancelationNode(nodeToCancel)
+        self.avl.cancelationNode(nodeToCancel, rebalance=not self.stressMode)
         return True
     
 

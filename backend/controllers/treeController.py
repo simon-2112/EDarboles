@@ -2,6 +2,7 @@ from flask import Blueprint,jsonify, request
 from models.AvlTree import AvlTree
 from models.BstTree import BstTree
 from services.flightTreeService import TreeService
+from services.stressModeService import StressService
 from models.Flight import Flight
 
 # base route -> http://localhost:5000/api/tree
@@ -17,7 +18,7 @@ tree_bp = Blueprint("tree", __name__)
 """
 
 service = TreeService()
-
+stressService = StressService(service)
 
 
 #core TREE
@@ -388,6 +389,63 @@ def get_metrics():
         return jsonify({
             "status": "success",
             "data": metrics
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 400
+
+
+#STRESS MODE
+@tree_bp.route("/stress/activate", methods=["POST"])
+def activate_stress():
+    try:
+        stressService.activateStress()
+
+        return jsonify({
+            "status": "success",
+            "data": {"stressMode": True}
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 400
+
+
+
+
+@tree_bp.route("/stress/desactivate", methods=["POST"])
+def deactivate_stress():
+    try:
+        result = stressService.desactivateStress()
+
+        return jsonify({
+            "status": "success",
+            "data": {
+                "stressMode": False,
+                "rebalance": result,
+                "tree": service.getTreeJson()
+            }
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 400
+
+@tree_bp.route("/stress/rebalance", methods=["POST"])
+def rebalance():
+    try:
+        result = stressService.rebalanceGlobal()
+
+        return jsonify({
+            "status": "success",
+            "data": result
         }), 200
 
     except Exception as e:

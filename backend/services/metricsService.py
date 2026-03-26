@@ -13,10 +13,10 @@ class MetricsService:
             "rotaciones": avl.rotations,
             "cancelacionesMasivas": treeService.totalCancelations,
             "recorridos": {
-                "inorder": avl.inOrderTraversal(),
-                "preorder": avl.preOrderTraversal(),
-                "postorder": avl.posOrderTraversal(),
-                "bfs": avl.breadthFirstSearch()
+                "inorder": avl.getInOrderJSON(),
+                "preorder": avl.getPreOrderJSON(),
+                "postorder": avl.getPosOrderJSON(),
+                "bfs": avl.breadthFirstSearchJSON()
             },
             "hojas": avl.countLeaves(avl.root)
         }
