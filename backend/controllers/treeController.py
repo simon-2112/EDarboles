@@ -453,3 +453,85 @@ def rebalance():
             "status": "error",
             "message": str(e)
         }), 400
+    
+
+# PENALTY SERVICE
+@tree_bp.route("/penalty/setDepthLimit", methods=["POST"])
+def set_depth_limit():
+    """
+    configure the limit depth.
+    it need a format like:
+    {
+        "limit": 2
+    }
+    this endpoint call the method setDepthLimit(limit) who calculate the penalty at the same time with applyPenalty(). 
+    """
+    data = request.get_json()
+    try:
+        limit = int(data.get("limit", 0))
+        service.penaltyService.setDepthLimit(limit)
+
+        return jsonify({
+            "status": "success",
+            "message": f"Depth limit set to {limit}",
+            "depthLimit": limit,
+            "tree": service.getTreeJson()  # ya incluye isCritical en nodeToJson
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 400
+
+#auxiliar endpoint 
+@tree_bp.route("/penalty/apply", methods=["POST"])
+def apply_penalty():
+    """
+    use the penalization if the depth is bigger than the depth limit
+    only useful with stress mode
+    """
+    try:
+        if not service.stressMode:
+            return jsonify({
+                "status": "error",
+                "message": "Stress mode is not active. Penalty cannot be applied."
+            }), 400
+
+        service.penaltyService.applyPenalty()
+
+        return jsonify({
+            "status": "success",
+            "message": "Penalty applied according to current depth limit",
+            "tree": service.getTreeJson()
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 400
+
+#AUDITORY AVL (VERIFY PROPERTIES)
+@tree_bp.route("/auditory", methods=["GET"])
+def audit_avl():
+    """
+    Verifica las propiedades AVL del árbol en modo estrés.
+    Retorna un reporte detallado de cada nodo y lista de nodos inconsistentes.
+    Solo funciona si stressMode está activo.
+    """
+    try:
+        result = service.getAuditAVL()
+
+        return jsonify({
+            "status": "success",
+            "message": "Auditoría AVL completada",
+            "report": result["treeReport"],
+            "inconsistentNodes": result["inconsistentNodes"]
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 400 

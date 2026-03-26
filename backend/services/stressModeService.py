@@ -5,9 +5,11 @@ class StressService:
 
     def activateStress(self):
         self.treeService.stressMode = True
+        self.treeService.penaltyService.applyPenalty()
 
     def desactivateStress(self):
         self.treeService.stressMode = False
+        self.treeService.penaltyService.clearPenalty()
         return self.rebalanceGlobal()
 
     """

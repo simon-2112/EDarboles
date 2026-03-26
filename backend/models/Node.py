@@ -12,6 +12,7 @@ class Node:
         self._parent = None
         self._leftChild = None
         self._rightChild = None
+        self._isCritical = False
         self._height = 0  # For AVL balancing
 
     def getValue(self):
@@ -43,6 +44,12 @@ class Node:
 
     def setParent(self, node):
         self._parent = node
+    
+    def isCritical(self):
+        return self._isCritical
+    
+    def setCritical(self, value: bool):
+        self._isCritical = value
 
     def __repr__(self):
         return f"Node({self._value})"

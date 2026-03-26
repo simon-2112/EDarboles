@@ -630,31 +630,30 @@ class AvlTree:
         Returns:
             bool: True if the tree satisfies all AVL properties, False otherwise.
         """
-
-        def _check(node):
-            """
-            Recursively check both BST and AVL properties for a subtree.
-
-            Returns a tuple of (is_valid, actual_height) where:
-            - is_valid: True if the subtree satisfies all AVL properties
-            - actual_height: The actual height of the subtree
-            """
-            if node is None:
-                return True, 0
-
-            # Check left and right subtrees
-            left_ok, left_h = _check(node.getLeftChild())
-            right_ok, right_h = _check(node.getRightChild())
-
-            # Ensure both subtrees are valid and balance factor is within range
-            ok = left_ok and right_ok and abs(left_h - right_h) <= 1
-
-            # Calculate and return the height of this node
-            return ok, 1 + max(left_h, right_h)
-
-        # Check the entire tree starting from root
-        ok, _ = _check(self.root)
+        ok, _ = self._check(self.root)
         return ok
+
+    def _check(self, node):
+        """
+        Recursively check both BST and AVL properties for a subtree.
+
+        Returns a tuple of (is_valid, actual_height) where:
+        - is_valid: True if the subtree satisfies all AVL properties
+        - actual_height: The actual height of the subtree
+        """
+        if node is None:
+            return True, 0
+
+        # Check left and right subtrees
+        left_ok, left_h = self._check(node.getLeftChild())
+        right_ok, right_h = self._check(node.getRightChild())
+
+        # Ensure both subtrees are valid and balance factor is within range
+        ok = left_ok and right_ok and abs(left_h - right_h) <= 1
+
+        # Calculate and return the height of this node
+        return ok, 1 + max(left_h, right_h)
+
 
     # ======================== SEARCH OPERATIONS =============================
 

@@ -1,5 +1,4 @@
 import json
-from datetime import datetime
 
 
 class Flight:
@@ -168,7 +167,7 @@ class Flight:
 
     # ======================== UTILITY METHODS ================================
 
-    def calculateFinalPrice(self):
+    def calculateFinalPrice(self, isCritical=False):
         """
         Calculate the final ticket price after applying the promotional discount.
 
@@ -178,7 +177,12 @@ class Flight:
             float: The final ticket price after discount.
         """
         discountFactor = 1 - (self._promotion / 100)
-        return self._price * discountFactor
+        price = self._price * discountFactor
+        
+        if isCritical:
+            price *= 1.25
+        return price
+
 
     def calculateTotalRevenue(self):
         """

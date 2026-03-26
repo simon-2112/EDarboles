@@ -9,7 +9,8 @@ from services.versionService import VersionService
 from services.queueService import QueueService
 from services.metricsService import MetricsService
 from services.stressModeService import StressService
-from datetime import datetime
+from services.penaltyService import PenaltyService
+from services.auditoryService import AuditoryService
 
 
 class TreeService:
@@ -26,11 +27,12 @@ class TreeService:
         self.bst = BstTree()
         self.history = Stack()
         self.versionService = VersionService()
-        self.queueService = QueueService() #concurrence simulation
+        self.queueService = QueueService()
         self.metricsService = MetricsService()
         self.stressService = StressService(self)
+        self.penaltyService = PenaltyService(self)
+        self.auditoryService = AuditoryService(self)
     
-    # data = readJson("../data/modo_topologia.json"); #this is only for test purposes, data is obtained from the frontend
     def createTree(self, data):
         self.saveState()
         dataType = data["tipo"]
@@ -116,6 +118,9 @@ class TreeService:
         self.saveState()
         node = Node(flight)
         self.avl.insert(node, rebalance=not self.stressMode)
+        
+        if self.stressMode:
+            self.penaltyService.applyPenalty()
     
     def searchFlight(self, flightCode):
         if not flightCode:
@@ -135,6 +140,9 @@ class TreeService:
 
         self.saveState()
         self.avl.delete(node, rebalance=not self.stressMode)
+        
+        if self.stressMode:
+            self.penaltyService.applyPenalty()
         return True
         
     
@@ -150,6 +158,9 @@ class TreeService:
         self.saveState()
         self.totalCancelations += 1
         self.avl.cancelationNode(nodeToCancel, rebalance=not self.stressMode)
+        
+        if self.stressMode:
+            self.penaltyService.applyPenalty()
         return True
     
 
@@ -176,7 +187,7 @@ class TreeService:
         flight = node.getValue()
         height = node.getHeight()
         balance = self.avl.balance_factor(node)
-        finalPrice = flight.calculateFinalPrice()
+        finalPrice = flight.calculateFinalPrice(node.isCritical() if self.stressMode else False)
 
         return {
             "codigo": flight.getIdFlight(),
@@ -189,6 +200,7 @@ class TreeService:
             "prioridad": flight.getPriority(),
             "promocion": flight.getPromotion(),
             "alerta": flight.getAlert(),
+            "esCritico": node.isCritical() if self.stressMode else False,
             
             "altura": height,
             "factorEquilibrio": balance,
@@ -236,3 +248,9 @@ class TreeService:
     
     def getMetrics(self):
         return self.metricsService.getMetrics(self)
+    
+    
+    #its not necessary to call the method in the stressMode conditional because in the user interface we can´t 
+    #touch the button verify avl properties. Only with stress mode active.
+    def getAuditAVL(self):
+        return self.auditoryService.auditAVL()
