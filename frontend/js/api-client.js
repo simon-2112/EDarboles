@@ -1,216 +1,156 @@
 /**
- * API Client - Comunicación con backend SkyBalance
- * Base URL: http://localhost:5000/api/tree
+ * Cliente API para comunicarse con el backend Flask (AVL)
  */
 
 const API_BASE_URL = "http://localhost:5000/api/tree";
 
 /**
- * Realiza una petición HTTP genérica
- * @param {string} endpoint - Ruta del endpoint
- * @param {string} method - Método HTTP (GET, POST, PUT, DELETE)
- * @param {object|null} data - Datos a enviar en el body
- * @returns {Promise<object>} Respuesta del servidor
+ * Función base para peticiones HTTP
  */
-async function apiFetch(endpoint, method = "GET", data = null) {
-  try {
-    const options = {
-      method,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    };
+async function apiFetch(endpoint, metodo = "GET", datos = null) {
+  const opciones = {
+    method: metodo,
+    headers: { "Content-Type": "application/json" },
+  };
 
-    if (data) {
-      options.body = JSON.stringify(data);
-    }
+  if (datos) opciones.body = JSON.stringify(datos);
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
-    const result = await response.json();
+  const respuesta = await fetch(`${API_BASE_URL}${endpoint}`, opciones);
+  const resultado = await respuesta.json();
 
-    if (!response.ok) {
-      throw new Error(result.message || `Error ${response.status}`);
-    }
-
-    return result;
-  } catch (error) {
-    console.error(`API Error [${method} ${endpoint}]:`, error);
-    throw error;
+  if (!respuesta.ok) {
+    throw new Error(resultado.message || `Error ${respuesta.status}`);
   }
+
+  return resultado;
 }
 
-// ============= CORE TREE OPERATIONS =============
+// ─────────────── Árbol AVL ───────────────
 
-/**
- * Obtener árbol completo
- * @returns {Promise<object>} Árbol en formato JSON
- */
+/** Obtiene el árbol */
 async function getTree() {
   return apiFetch("");
 }
 
-/**
- * Crear árbol (por inserción o topología)
- * @param {object} data - Datos del árbol {"tipo": "INSERCION"|"TOPOLOGIA", ...}
- * @returns {Promise<object>} Árbol creado
- */
-async function createTree(data) {
-  return apiFetch("/create", "POST", data);
+/** Crea o carga un árbol */
+async function createTree(datos) {
+  return apiFetch("/create", "POST", datos);
 }
 
-/**
- * Insertar vuelo
- * @param {object} flight - {"codigo", "origen", "destino", "horaSalida", "precioBase", "pasajeros", "promocion", "alerta", "prioridad"}
- * @returns {Promise<object>} Árbol actualizado
- */
-async function insertFlight(flight) {
-  return apiFetch("/insert", "POST", flight);
+/** Inserta un vuelo */
+async function insertFlight(vuelo) {
+  return apiFetch("/insert", "POST", vuelo);
 }
 
-/**
- * Buscar vuelo por código
- * @param {string} flightCode - Código del vuelo
- * @returns {Promise<object>} Datos del vuelo
- */
-async function searchFlight(flightCode) {
-  return apiFetch(`/search/${flightCode}`);
+/** Busca un vuelo por código */
+async function searchFlight(codigo) {
+  return apiFetch(`/search/${codigo}`);
 }
 
-/**
- * Eliminar vuelo (solo el nodo)
- * @param {string} flightCode - Código del vuelo
- * @returns {Promise<object>} Árbol actualizado
- */
-async function deleteFlight(flightCode) {
-  return apiFetch(`/delete/${flightCode}`, "DELETE");
+/** Elimina un vuelo */
+async function deleteFlight(codigo) {
+  return apiFetch(`/delete/${codigo}`, "DELETE");
 }
 
-/**
- * Actualizar vuelo
- * @param {string} flightCode - Código del vuelo a actualizar
- * @param {object} flight - Nuevos datos del vuelo
- * @returns {Promise<object>} Árbol actualizado
- */
-async function updateFlight(flightCode, flight) {
-  return apiFetch(`/update/${flightCode}`, "PUT", flight);
+/** Actualiza un vuelo */
+async function updateFlight(codigoOriginal, vuelo) {
+  return apiFetch(`/update/${codigoOriginal}`, "PUT", vuelo);
 }
 
-/**
- * Cancelar vuelo + descendientes
- * @param {string} flightCode - Código del vuelo
- * @returns {Promise<object>} Árbol actualizado
- */
-async function cancelSubtree(flightCode) {
-  return apiFetch(`/cancel/${flightCode}`, "DELETE");
+/** Cancela un nodo y su subárbol */
+async function cancelSubtree(codigo) {
+  return apiFetch(`/cancel/${codigo}`, "DELETE");
 }
 
-/**
- * Resetear árbol (eliminar todos los nodos)
- * @returns {Promise<object>} Confirmación
- */
+/** Reinicia el árbol */
 async function resetTree() {
   return apiFetch("/reset", "DELETE");
 }
 
-// ============= UNDO/HISTORY =============
+// ─────────────── Historial ───────────────
 
-/**
- * Deshacer última acción
- * @returns {Promise<object>} Árbol revertido
- */
+/** Deshace la última acción */
 async function undoAction() {
   return apiFetch("/undo", "POST");
 }
 
-// ============= EXPORT =============
+// ─────────────── Exportación ───────────────
 
-/**
- * Exportar árbol a JSON
- * @returns {Promise<object>} Árbol en formato exportable
- */
+/** Exporta el árbol */
 async function exportTree() {
   return apiFetch("/export");
 }
 
-// ============= VERSIONS =============
+// ─────────────── Versiones ───────────────
 
-/**
- * Guardar versión del árbol actual
- * @param {string} name - Nombre de la versión
- * @returns {Promise<object>} Confirmación
- */
-async function saveVersion(name) {
-  return apiFetch("/version/save", "POST", { name });
+/** Guarda una versión */
+async function saveVersion(nombre) {
+  return apiFetch("/version/save", "POST", { name: nombre });
 }
 
-/**
- * Cargar versión guardada
- * @param {string} name - Nombre de la versión
- * @returns {Promise<object>} Árbol cargado
- */
-async function loadVersion(name) {
-  return apiFetch(`/version/load/${name}`, "POST");
+/** Carga una versión */
+async function loadVersion(nombre) {
+  return apiFetch(`/version/load/${nombre}`, "POST");
 }
 
-/**
- * Obtener lista de versiones guardadas
- * @returns {Promise<object>} Lista de versiones
- */
+/** Lista versiones */
 async function getVersions() {
   return apiFetch("/version");
 }
 
-// ============= QUEUE (CONCURRENCY SIMULATION) =============
+// ─────────────── Cola ───────────────
 
-/**
- * Encolar vuelo para procesamiento concurrente
- * @param {object} flight - Datos del vuelo
- * @returns {Promise<object>} Confirmación
- */
-async function enqueueFlight(flight) {
-  return apiFetch("/queue/enqueue", "POST", flight);
+/** Encola un vuelo */
+async function enqueueFlight(vuelo) {
+  return apiFetch("/queue/enqueue", "POST", vuelo);
 }
 
-/**
- * Procesar cola de vuelos
- * @returns {Promise<object>} Pasos de procesamiento
- */
+/** Procesa la cola */
 async function processQueue() {
   return apiFetch("/queue/process", "POST");
 }
 
-// ============= METRICS =============
+// ─────────────── Métricas ───────────────
 
-/**
- * Obtener métricas del árbol
- * @returns {Promise<object>} Métricas (altura, nodos, hojas, rotaciones, etc.)
- */
+/** Obtiene métricas */
 async function getMetrics() {
   return apiFetch("/metrics");
 }
 
-// ============= STRESS MODE =============
+// ─────────────── Modo estrés ───────────────
 
-/**
- * Activar modo estrés
- * @returns {Promise<object>} Confirmación
- */
+/** Activa modo estrés */
 async function activateStress() {
   return apiFetch("/stress/activate", "POST");
 }
 
-/**
- * Desactivar modo estrés
- * @returns {Promise<object>} Resultado incluye rebalance
- */
+/** Desactiva modo estrés y rebalancea */
 async function deactivateStress() {
   return apiFetch("/stress/desactivate", "POST");
 }
 
-/**
- * Rebalancear árbol (rebalance global)
- * @returns {Promise<object>} Resultado del rebalance
- */
+/** Rebalanceo manual en estrés */
 async function rebalanceStress() {
   return apiFetch("/stress/rebalance", "POST");
+}
+
+// ─────────────── Penalización ───────────────
+
+/** Define límite de profundidad */
+async function setDepthLimit(limite) {
+  return apiFetch("/penalty/setDepthLimit", "POST", { limit: limite });
+}
+
+// ─────────────── Auditoría ───────────────
+
+/** Verifica propiedades AVL */
+async function auditAVL() {
+  return apiFetch("/auditory");
+}
+
+// ─────────────── Rentabilidad ───────────────
+
+/** Elimina el vuelo menos rentable */
+async function deleteLowestProfit() {
+  return apiFetch("/profit/deleteLowest", "POST");
 }
