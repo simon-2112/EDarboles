@@ -129,6 +129,118 @@ body {
     transform: translateY(0);
 }
 
+/* About Page Styles */
+.about-container {
+    max-width: 900px;
+    margin: 80px auto 0;
+    padding: 2rem;
+}
+
+.about-header {
+    text-align: center;
+    margin-bottom: 3rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.about-header .logo-main {
+    height: 150px;
+    margin-bottom: 1.5rem;
+}
+
+.about-header .title {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.about-header .subtitle {
+    font-size: 1.3rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.about-content {
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 2.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.about-section {
+    margin-bottom: 2rem;
+}
+
+.about-section h2 {
+    font-size: 1.8rem;
+    color: #00d4ff;
+    margin-bottom: 1rem;
+    font-weight: 600;
+    text-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.about-section p {
+    font-size: 1.05rem;
+    line-height: 1.8;
+    margin-bottom: 1rem;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.about-list {
+    list-style: none;
+    padding-left: 0;
+}
+
+.about-list li {
+    font-size: 1.05rem;
+    line-height: 1.8;
+    margin-bottom: 0.8rem;
+    padding-left: 2rem;
+    position: relative;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.about-list li:before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: #00d4ff;
+    font-weight: bold;
+    font-size: 1.3rem;
+}
+
+.tech-stack {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1.5rem;
+    border-left: 4px solid #00d4ff;
+    border-radius: 5px;
+    font-size: 1.05rem;
+    line-height: 2;
+}
+
+.team-info {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1.5rem;
+    border-left: 4px solid #00d4ff;
+    border-radius: 5px;
+    font-size: 1.05rem;
+    line-height: 2;
+}
+
+.footer-section {
+    text-align: center;
+    margin-top: 2.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.about-footer {
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1rem;
+}
+
 @media (max-width: 768px) {
     .header-content {
         flex-direction: column;
@@ -146,5 +258,31 @@ body {
     .btn-enter {
         padding: 0.8rem 2rem;
         font-size: 1rem;
+    }
+
+    .about-container {
+        margin-top: 100px;
+        padding: 1rem;
+    }
+
+    .about-header .title {
+        font-size: 2rem;
+    }
+
+    .about-header .subtitle {
+        font-size: 1rem;
+    }
+
+    .about-content {
+        padding: 1.5rem;
+    }
+
+    .about-section h2 {
+        font-size: 1.4rem;
+    }
+
+    .about-section p,
+    .about-list li {
+        font-size: 0.95rem;
     }
 }
