@@ -629,3 +629,56 @@ input:focus {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--gray);
 }
+
+/* =====================================================
+   COLA DE INSERCIONES (Requerimiento 3)
+   ===================================================== */
+
+.queue-info {
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.queue-list {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) var(--light-gray);
+}
+
+.queue-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.queue-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.queue-list::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+}
+
+/* Panel de Procesamiento */
+#processing-panel {
+    background: rgba(25, 118, 210, 0.05);
+    border: 1px solid rgba(25, 118, 210, 0.2);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+#processing-panel.hidden {
+    display: none;
+}
+
+#step-info {
+    color: #1976d2;
+    font-weight: 600;
+}
+
+#step-metrics {
+    color: rgba(0, 0, 0, 0.6);
+}
+
+/* Indicadores de conflicto en canvas - nodos amarillo crítico para balance crítico */
+.tree-node-conflict {
+    fill: #FFD93D;
+}
