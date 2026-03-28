@@ -15,15 +15,9 @@ def main():
     service.createTree(data)
     service.toPrintAvl()
     print()
-    stress.activateStress()
-    flight = Flight(idFlight="SB105")
-    service.insertFlight(flight)
+    service.deleteFlight("SB120")
     print()
     service.toPrintAvl()
-    print()
-    stress.rebalanceGlobal()
-    service.toPrintAvl()
-    
 
 
 if __name__ == "__main__":

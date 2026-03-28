@@ -303,7 +303,7 @@ class AvlTree:
         node.setValue(pred.getValue())
 
         # Recursively delete the predecessor from the left subtree
-        new_left = self._delete(node.getLeftChild(), pred.getValue(), rebalance)
+        new_left = self._delete(node.getLeftChild(), pred, rebalance)
 
         node.setLeftChild(new_left)
 
