@@ -87,7 +87,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // ── Versiones ──────────────────────────────────────────────
   document.getElementById("btn-save-version")
     .addEventListener("click", manejarGuardarVersion);
-  document.getElementById("btn-save-version").disabled = true;
 
   // ESC limpia el formulario de inserción
   document.addEventListener("keydown", (e) => {
@@ -499,7 +498,7 @@ async function manejarModoEstres(e) {
       modoEstresActivo = true;
       btnRebalancear.disabled = false;
       btnVerificar.disabled   = false;
-      btnSaveVersion.disabled = false;
+      btnSaveVersion.disabled = true;
       indicador.textContent   = "⚠ Modo Estrés";
       indicador.classList.add("stress-mode");
       await cargarArbol();
@@ -516,7 +515,7 @@ async function manejarModoEstres(e) {
       arbolActual      = respuesta.data.tree;
       btnRebalancear.disabled = true;
       btnVerificar.disabled   = true;
-      btnSaveVersion.disabled = true;
+      btnSaveVersion.disabled = false;
       indicador.textContent   = "Modo Normal";
       indicador.classList.remove("stress-mode");
       await actualizarInterfaz();
