@@ -130,8 +130,8 @@ class Flight:
         Args:
             priority (int): Priority level. 1-5 or similar range.
         """
-        if priority < 1 or priority > 5:
-            raise ValueError("Priority should be between 1 and 5.")
+        if priority < 1 or priority > 3:
+            raise ValueError("Priority should be between 1 and 3.")
         
         self._priority = priority
 

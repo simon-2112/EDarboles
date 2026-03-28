@@ -9,7 +9,6 @@ class ProfitService:
         
         return: lowest profit node
         """
-        print(" INICIOOOOOOO")
         avl = self.treeService.avl
         if avl.root is None:
             return None
@@ -43,7 +42,6 @@ class ProfitService:
         rent = totalRevenue - promoValue
 
         update = False
-        print("este es el nodo que busca ser candidato", flight, "este es el candidato actual: ",candidate["node"] ,"      ",rent < candidate["rent"] )
         if rent < candidate["rent"]:
             update = True
         elif rent == candidate["rent"]:
@@ -57,7 +55,6 @@ class ProfitService:
             candidate["node"] = node
             candidate["rent"] = rent
             candidate["depth"] = depth
-            # print(candidate["node"].getValue())
         
         self._findLowestProfitNode(node.getLeftChild(), depth + 1, candidate)
         self._findLowestProfitNode(node.getRightChild(), depth + 1, candidate)

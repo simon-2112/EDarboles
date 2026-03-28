@@ -492,12 +492,6 @@ def apply_penalty():
     only useful with stress mode
     """
     try:
-        if not service.stressMode:
-            return jsonify({
-                "status": "error",
-                "message": "Stress mode is not active. Penalty cannot be applied."
-            }), 400
-
         service.penaltyService.applyPenalty()
 
         return jsonify({

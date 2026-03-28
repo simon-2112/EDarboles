@@ -15,7 +15,7 @@ def main():
     service.createTree(data)
     service.toPrintAvl()
     print()
-    service.descendantsCancelation("SB120")
+    service.penaltyService.setDepthLimit(1)
     print()
     service.toPrintAvl()
 

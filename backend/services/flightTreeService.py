@@ -49,12 +49,14 @@ class TreeService:
         
         if(dataType.upper()  == "INSERCION"):
             self._createTreeInsertion(data)
+            self.penaltyService.applyPenalty()
         elif(dataType.upper() == "TOPOLOGIA"):
             changed = True
             root = self._createTreeTopology(data)
             #to rebalance when we load it.
             root, _ = self.avl.rebalanceFull(root)
             self.avl.root = root
+            self.penaltyService.applyPenalty()
         else:
             raise Exception("invalid data type, only INSERTION OR TOPOLOGY allowed")
 
@@ -110,7 +112,6 @@ class TreeService:
             nodeBst = Node(flight)
 
             self.avl.insert(nodeAvl)
-            #BST needs to be modified!!
             self.bst.insert(nodeBst)
 
     def toPrintAvl(self):
@@ -124,8 +125,7 @@ class TreeService:
         node = Node(flight)
         self.avl.insert(node, rebalance=not self.stressMode)
         
-        if self.stressMode:
-            self.penaltyService.applyPenalty()
+        self.penaltyService.applyPenalty()
     
     def searchFlight(self, flightCode):
         if not flightCode:
@@ -146,8 +146,7 @@ class TreeService:
         self.saveState()
         self.avl.delete(node, rebalance=not self.stressMode)
         
-        if self.stressMode:
-            self.penaltyService.applyPenalty()
+        self.penaltyService.applyPenalty()
         return True
         
     
@@ -163,8 +162,7 @@ class TreeService:
         self.saveState()
         self.totalCancelations += 1
         self.avl.cancelationNode(nodeToCancel, rebalance=not self.stressMode)
-        if self.stressMode:
-            self.penaltyService.applyPenalty()
+        self.penaltyService.applyPenalty()
         return True
     
 
@@ -191,7 +189,7 @@ class TreeService:
         flight = node.getValue()
         height = node.getHeight()
         balance = self.avl.balance_factor(node)
-        finalPrice = flight.calculateFinalPrice(node.isCritical() if self.stressMode else False)
+        finalPrice = flight.calculateFinalPrice(node.isCritical())
 
         return {
             "codigo": flight.getIdFlight(),
@@ -204,7 +202,7 @@ class TreeService:
             "prioridad": flight.getPriority(),
             "promocion": flight.getPromotion(),
             "alerta": flight.getAlert(),
-            "esCritico": node.isCritical() if self.stressMode else False,
+            "esCritico": node.isCritical(),
             
             "altura": height,
             "factorEquilibrio": balance,
