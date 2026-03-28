@@ -27,7 +27,7 @@ class QueueService:
             treeService.saveState()
             treeService.avl.insert(node)
 
-            bf = treeService.avl._balance_factor(treeService.avl.root)
+            bf = treeService.avl.balance_factor(treeService.avl.root)
             #take this for the stress mode case
             conflict = abs(bf) > 1
 

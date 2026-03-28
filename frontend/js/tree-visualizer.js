@@ -272,11 +272,11 @@ class TreeVisualizer {
  
     // Factor de equilibrio: solo se muestra en modo AVL y si el campo existe
     if (this.treeType === "avl" && nodo.factorEquilibrio !== undefined) {
-      const fe = nodo.factorEquilibrio;
+      const Bf = nodo.factorEquilibrio;
       ctx.font      = `9px 'Segoe UI', sans-serif`;
       // Se muestra en rojo si el factor es inválido (árbol en modo estrés)
-      ctx.fillStyle = Math.abs(fe) > 1 ? "#ff4444" : this.colores.texto;
-      ctx.fillText(`BF:${fe}`, x, y + 8);
+      ctx.fillStyle = Math.abs(Bf) > 1 ? "#ff4444" : this.colores.texto;
+      ctx.fillText(`BF:${Bf}`, x, y + 8);
     }
  
     // Dibujar hijos de forma recursiva

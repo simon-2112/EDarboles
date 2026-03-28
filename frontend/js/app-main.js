@@ -582,7 +582,7 @@ function mostrarModalAuditoria(respuesta) {
           : "❌ Se encontraron nodos que violan la propiedad AVL."}</strong>
       </div>
       ${inconsistentes.length > 0 ? `
-        <p style="font-size:.88rem;margin-bottom:.5rem;font-weight:600;">Nodos inconsistentes (|FE| > 1):</p>
+        <p style="font-size:.88rem;margin-bottom:.5rem;font-weight:600;">Nodos inconsistentes (|Bf| > 1):</p>
         <ul style="margin:0;padding-left:1.2rem;font-size:.85rem;color:#6b7280;">
           ${inconsistentes.map(n => `<li>${n}</li>`).join("")}
         </ul>` : ""}
