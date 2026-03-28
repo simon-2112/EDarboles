@@ -666,14 +666,14 @@ function mostrarModalAuditoria(respuesta) {
         border-left:4px solid ${esValido ? "#22c55e" : "#ef4444"};">
         <strong>${
           esValido
-            ? "✅ El árbol cumple la propiedad AVL en todos sus nodos."
+            ? "✅ El árbol cumple la propiedad AVL en todos sus nodos. Nodos consistentes ( |BF| ∈ { -1, 0, 1 } )"
             : "❌ Se encontraron nodos que violan la propiedad AVL."
         }</strong>
       </div>
       ${
         inconsistentes.length > 0
           ? `
-        <p style="font-size:.88rem;margin-bottom:.5rem;font-weight:600;">Nodos inconsistentes (|Bf| > 1):</p>
+        <p style="font-size:.88rem;margin-bottom:.5rem;font-weight:600;">Nodos inconsistentes ( |BF| ∉ { -1, 0, 1 } ):</p>
         <ul style="margin:0;padding-left:1.2rem;font-size:.85rem;color:#6b7280;">
           ${inconsistentes.map((n) => `<li>${n}</li>`).join("")}
         </ul>`
