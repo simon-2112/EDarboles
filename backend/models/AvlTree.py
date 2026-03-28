@@ -121,12 +121,14 @@ class AvlTree:
     # ========================= DELETION OPERATIONS ==========================
 
     def cancelationNode(self, value, rebalance=True):
-        """_summary_
-
-        Args:
-            value (Object): value represents the node
-        """
         self.root = self._cancelationNode(self.root, value, rebalance)
+
+        #until get stability
+        if rebalance:
+            changed = True
+
+            while changed:
+                self.root, changed = self._rebalanceFull(self.root)
 
     def _cancelationNode(self, current, target, rebalance):
         # the tree exists?
@@ -152,6 +154,37 @@ class AvlTree:
         self._update_height(current)
         
         return self._rebalance(current) if rebalance else current
+
+    """auxiliar method to ensure the rebalance of the tree
+    """
+    def _rebalanceFull(self, node):
+
+        if node is None:
+            return None, False
+
+        
+        left, leftChanged = self._rebalanceFull(node.getLeftChild())
+        right, rightChanged = self._rebalanceFull(node.getRightChild())
+
+        node.setLeftChild(left)
+        if left:
+            left.setParent(node)
+
+        node.setRightChild(right)
+        if right:
+            right.setParent(node)
+
+        self._update_height(node)
+
+        newNode = self._rebalance(node)
+
+        changed = (
+            leftChanged or
+            rightChanged or
+            newNode != node
+        )
+
+        return newNode, changed
 
     def delete(self, value, rebalance = True):
         """

@@ -15,7 +15,7 @@ def main():
     service.createTree(data)
     service.toPrintAvl()
     print()
-    service.deleteFlight("SB120")
+    service.descendantsCancelation("SB120")
     print()
     service.toPrintAvl()
 

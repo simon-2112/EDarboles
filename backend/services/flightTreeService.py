@@ -160,7 +160,6 @@ class TreeService:
         self.saveState()
         self.totalCancelations += 1
         self.avl.cancelationNode(nodeToCancel, rebalance=not self.stressMode)
-        self.stressService.rebalanceGlobal() #ATTTTENCION
         if self.stressMode:
             self.penaltyService.applyPenalty()
         return True
