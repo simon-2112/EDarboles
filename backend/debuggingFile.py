@@ -15,8 +15,14 @@ def main():
     service.createTree(data)
     service.toPrintAvl()
     print()
-    print("este es el candidato final:      ", service.deleteLowestProfitFlight())
+    stress.activateStress()
+    flight = Flight(idFlight="SB105")
+    service.insertFlight(flight)
     print()
+    service.toPrintAvl()
+    print()
+    stress.rebalanceGlobal()
+    service.toPrintAvl()
     
 
 

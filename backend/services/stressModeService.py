@@ -1,3 +1,4 @@
+from models.Node import Node
 class StressService:
 
     def __init__(self, treeService):
@@ -23,12 +24,13 @@ class StressService:
         flights = avl.inOrderTraversal()
 
         avl.clear()
-
-        
         avl.resetRotationStats()
+        
+        avl.root = avl.buildBalancedTree(flights)
 
         for flight in flights:
-            self.treeService.insertFlight(flight)
+            node  = Node(flight)
+            avl.insert(node, True)
 
         return {
             "message": "Rebalanceo global aplicado",

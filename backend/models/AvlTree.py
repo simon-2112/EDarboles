@@ -1,3 +1,4 @@
+from models.Node import Node
 from models.Queue import Queue
 
 
@@ -890,7 +891,27 @@ class AvlTree:
         Time Complexity: O(1)
         """
         self.root = None
+    
+        """
+        this method is used to rebuild the tree after a deformation in stress mode.
+        """
+    def buildBalancedTree(self, sortedFlights):
+        return self.__buildBalancedTree(sortedFlights, 0, len(sortedFlights) - 1)
 
+    def __buildBalancedTree(self, arr, start, end):
+        if start > end:
+            return None
+
+        mid = (start + end) // 2
+
+        node = Node(arr[mid])
+
+        node.setLeftChild(self.__buildBalancedTree(arr, start, mid - 1))
+        node.setRightChild(self.__buildBalancedTree(arr, mid + 1, end))
+
+        self._update_height(node)
+
+        return node
     # ======================== TREE VISUALIZATION =============================
 
     def print_tree(self):
