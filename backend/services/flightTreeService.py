@@ -50,7 +50,10 @@ class TreeService:
         if(dataType.upper()  == "INSERCION"):
             self._createTreeInsertion(data)
         elif(dataType.upper() == "TOPOLOGIA"):
+            changed = True
             root = self._createTreeTopology(data)
+            #to rebalance when we load it.
+            root, _ = self.avl.rebalanceFull(root)
             self.avl.root = root
         else:
             raise Exception("invalid data type, only INSERTION OR TOPOLOGY allowed")

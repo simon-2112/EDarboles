@@ -128,7 +128,7 @@ class AvlTree:
             changed = True
 
             while changed:
-                self.root, changed = self._rebalanceFull(self.root)
+                self.root, changed = self.rebalanceFull(self.root)
 
     def _cancelationNode(self, current, target, rebalance):
         # the tree exists?
@@ -157,14 +157,14 @@ class AvlTree:
 
     """auxiliar method to ensure the rebalance of the tree
     """
-    def _rebalanceFull(self, node):
+    def rebalanceFull(self, node):
 
         if node is None:
             return None, False
 
         
-        left, leftChanged = self._rebalanceFull(node.getLeftChild())
-        right, rightChanged = self._rebalanceFull(node.getRightChild())
+        left, leftChanged = self.rebalanceFull(node.getLeftChild())
+        right, rightChanged = self.rebalanceFull(node.getRightChild())
 
         node.setLeftChild(left)
         if left:
