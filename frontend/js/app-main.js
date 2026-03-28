@@ -602,6 +602,7 @@ async function manejarModoEstres(e) {
       btnSaveVersion.disabled = false;
       indicador.textContent = "Modo Normal";
       indicador.classList.remove("stress-mode");
+      console.log(respuesta)
       await actualizarInterfaz();
       mostrarToast(
         "Modo estrés desactivado. Árbol rebalanceado automáticamente.",
@@ -801,14 +802,6 @@ async function manejarActualizarProfundidad() {
     mostrarToast(
       "Ingresa una profundidad válida (número entero ≥ 0).",
       "warning",
-    );
-    return;
-  }
-
-  if (!modoEstresActivo) {
-    mostrarToast(
-      `Profundidad límite guardada en ${profundidad}. Se aplicará al activar el modo estrés.`,
-      "info",
     );
     return;
   }

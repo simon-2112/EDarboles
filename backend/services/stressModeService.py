@@ -24,12 +24,11 @@ class StressService:
         avl.clear()
         avl.resetRotationStats()
         
-        avl.root = avl.buildBalancedTree(flights)
 
         for flight in flights:
             node  = Node(flight)
             avl.insert(node, True)
-
+        
         return {
             "message": "Rebalanceo global aplicado",
             "nodes": len(flights),
