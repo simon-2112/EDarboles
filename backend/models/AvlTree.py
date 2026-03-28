@@ -150,6 +150,7 @@ class AvlTree:
 
         # then update the height and rebalance the tree
         self._update_height(current)
+        
         return self._rebalance(current) if rebalance else current
 
     def delete(self, value, rebalance = True):
