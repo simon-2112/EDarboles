@@ -1,27 +1,38 @@
+/**
+ * App Main - SkyBalance AVL
+ *
+ * Gestiona todos los eventos de la interfaz, las llamadas a la API y las
+ * actualizaciones visuales.
+ *
+ * Dependencias (deben cargarse antes en el HTML):
+ *   api-client.js      → funciones de comunicación con el backend Flask
+ *   tree-visualizer.js → clase TreeVisualizer para dibujar en canvas
+ */
 
+// ════════════════════════════════════════════════════════════
+// ESTADO GLOBAL
+// ════════════════════════════════════════════════════════════
 
 let visualizador      = null;   // Instancia de TreeVisualizer para el canvas principal
 let arbolActual       = null;   // Último árbol AVL recibido del backend
 let modoEstresActivo  = false;  // Indica si el modo estrés está activado
+let ultimoJsonCargado = null;   // JSON del último archivo cargado (para construir el BST local)
 
-// Guarda el JSON del último archivo cargado (necesario para construir el BST local)
-let ultimoJsonCargado = null;
-
-// ═══════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════
 // INICIALIZACIÓN
 // ════════════════════════════════════════════════════════════
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Crear el visualizador sobre el canvas principal
   visualizador = new TreeVisualizer("tree-canvas");
 
-  // Cargar el árbol que el backend tenga en memoria (si existe)
+  // Cargar el árbol que el backend tenga en memoria al abrir la app
   cargarArbol();
+
+  actualizarListaVersiones();
 
   // ── Carga de archivo ──────────────────────────────────────
   document.getElementById("btn-load-file")
     .addEventListener("click", () => document.getElementById("file-input").click());
-
   document.getElementById("file-input")
     .addEventListener("change", manejarArchivoSeleccionado);
 
@@ -76,8 +87,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // ── Versiones ──────────────────────────────────────────────
   document.getElementById("btn-save-version")
     .addEventListener("click", manejarGuardarVersion);
+  document.getElementById("btn-save-version").disabled = true;
 
-  // Presionar ESC limpia el formulario de inserción
+  // ESC limpia el formulario de inserción
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") limpiarFormulario();
   });
@@ -92,32 +104,47 @@ async function cargarArbol() {
   try {
     const respuesta = await getTree();
     arbolActual = respuesta.data;
-    actualizarInterfaz();
+    await actualizarInterfaz();
   } catch {
     mostrarEstadoVacio();
   }
 }
 
-/** Redibuja el árbol y actualiza métricas y lista de versiones. */
-function actualizarInterfaz() {
+/**
+ * Redibuja el árbol y actualiza métricas y lista de versiones.
+ *
+ * CORRECCIÓN CANVAS: el canvas puede tener dimensiones 0 si estaba
+ * oculto (display:none) cuando se construyó el DOM. Por eso se
+ * redimensiona explícitamente antes de dibujar, usando requestAnimationFrame
+ * para garantizar que el navegador ya calculó el layout visible.
+ */
+async function actualizarInterfaz() {
   if (!arbolActual) {
     mostrarEstadoVacio();
     return;
   }
+
+  // 1. Hacer el canvas visible primero
   ocultarEstadoVacio();
+
+  // 2. Esperar un frame de layout para que el canvas tenga dimensiones reales
+  await new Promise(resolve => requestAnimationFrame(resolve));
+
+  // 3. Redimensionar y dibujar
+  visualizador._redimensionarCanvas();
   visualizador.draw(arbolActual);
+
+  // 4. Actualizar métricas y versiones (async, no bloquea el dibujado)
   actualizarMetricas();
   actualizarListaVersiones();
 }
 
-/** Muestra el mensaje de "árbol vacío" y oculta el canvas. */
 function mostrarEstadoVacio() {
   document.getElementById("empty-state")?.classList.remove("hidden");
   document.getElementById("tree-canvas").style.display = "none";
   limpiarMetricas();
 }
 
-/** Oculta el mensaje de vacío y muestra el canvas. */
 function ocultarEstadoVacio() {
   document.getElementById("empty-state")?.classList.add("hidden");
   document.getElementById("tree-canvas").style.display = "block";
@@ -130,28 +157,21 @@ function ocultarEstadoVacio() {
 /**
  * Lee el archivo JSON seleccionado por el usuario, lo envía al backend
  * (endpoint /create) y muestra el árbol resultante.
- *
- * Si el tipo es INSERCION, abre además una ventana de comparación AVL vs BST
- * tal como requiere el enunciado (sección 1.1).
+ * Para tipo INSERCION abre el modal de comparación AVL vs BST (req. 1.1).
  */
 async function manejarArchivoSeleccionado(e) {
   const archivo = e.target.files[0];
   if (!archivo) return;
+  e.target.value = "";  // permite re-seleccionar el mismo archivo
 
-  // Resetear el input para permitir cargar el mismo archivo de nuevo si es necesario
-  e.target.value = "";
-
-  // Leer y parsear el JSON
   let datos;
   try {
-    const texto = await archivo.text();
-    datos = JSON.parse(texto);
+    datos = JSON.parse(await archivo.text());
   } catch {
     mostrarToast("El archivo seleccionado no es un JSON válido.", "error");
     return;
   }
 
-  // Validar que tenga el campo "tipo"
   if (!datos.tipo) {
     mostrarToast('El JSON debe tener el campo "tipo": INSERCION o TOPOLOGIA.', "error");
     return;
@@ -163,44 +183,39 @@ async function manejarArchivoSeleccionado(e) {
     return;
   }
 
+  const btn = document.getElementById("btn-load-file");
+  setLoading(btn, true, "Cargando…");
   try {
-    // Enviar al backend para construir el árbol AVL
-    const respuesta = await createTree(datos);
-    arbolActual = respuesta.data;
+    const respuesta   = await createTree(datos);
+    arbolActual       = respuesta.data;
     ultimoJsonCargado = datos;
 
-    actualizarInterfaz();
+    await actualizarInterfaz();
 
-    // Mostrar el nombre del archivo en la barra lateral
     document.getElementById("file-name").textContent = `📄 ${archivo.name}`;
     document.getElementById("file-info").classList.remove("hidden");
 
     mostrarToast(`Árbol cargado desde: ${archivo.name}`, "success");
 
-    // Si es de tipo INSERCION, abrir el modal de comparación AVL vs BST
     if (tipo === "INSERCION" && Array.isArray(datos.vuelos) && datos.vuelos.length > 0) {
-      // Pequeño retraso para que el canvas principal se renderice primero
       setTimeout(() => mostrarModalComparacion(arbolActual, datos.vuelos), 150);
     }
-
   } catch (err) {
     mostrarToast(`Error al crear el árbol: ${err.message}`, "error");
+  } finally {
+    setLoading(btn, false, "Seleccionar archivo JSON");
   }
 }
 
 // ────────────────────────────────────────────────────────────
-// Construcción del BST local para la comparación
-// El backend solo expone el AVL; el BST se reconstruye en JavaScript
-// a partir de la lista de vuelos del archivo JSON.
+// BST local para la comparación (el backend solo expone el AVL)
 // ────────────────────────────────────────────────────────────
 
-/** Extrae la parte numérica del código de un vuelo para comparar en el BST. */
 function _codigoNumerico(codigo) {
   const digitos = String(codigo).replace(/\D/g, "");
   return digitos ? parseInt(digitos, 10) : 0;
 }
 
-/** Crea un nodo BST simple a partir de los datos de un vuelo. */
 function _crearNodoBST(vuelo) {
   return {
     codigo:           vuelo.codigo,
@@ -210,17 +225,15 @@ function _crearNodoBST(vuelo) {
     alerta:           !!vuelo.alerta,
     promocion:        !!vuelo.promocion,
     esCritico:        false,
-    factorEquilibrio: undefined, // El BST no tiene factor de equilibrio
+    factorEquilibrio: undefined,
     izquierdo:        null,
     derecho:          null,
   };
 }
 
-/** Inserta un vuelo en el BST local de forma iterativa. */
 function _insertarEnBST(raiz, vuelo) {
   const nodo = _crearNodoBST(vuelo);
   if (!raiz) return nodo;
-
   let actual = raiz;
   while (true) {
     if (nodo._numCodigo < actual._numCodigo) {
@@ -230,13 +243,12 @@ function _insertarEnBST(raiz, vuelo) {
       if (!actual.derecho)   { actual.derecho   = nodo; break; }
       actual = actual.derecho;
     } else {
-      break; // Código duplicado, se ignora
+      break;  // duplicado, se ignora
     }
   }
   return raiz;
 }
 
-/** Construye un BST completo a partir de la lista de vuelos del JSON. */
 function construirBSTLocal(vuelos) {
   let raiz = null;
   for (const v of vuelos) raiz = _insertarEnBST(raiz, v);
@@ -247,15 +259,8 @@ function construirBSTLocal(vuelos) {
 // Modal de comparación AVL vs BST (requerimiento 1.1)
 // ────────────────────────────────────────────────────────────
 
-/**
- * Abre una ventana modal que muestra lado a lado el árbol AVL (balanceado,
- * devuelto por el backend) y el BST (sin balanceo, construido localmente),
- * junto con sus propiedades: raíz, profundidad máxima y número de hojas.
- */
 function mostrarModalComparacion(arbolAVL, vuelos) {
-  // Eliminar modal anterior si existe
   document.getElementById("modal-comparacion")?.remove();
-
   const arbolBST = construirBSTLocal(vuelos);
 
   const fondo = document.createElement("div");
@@ -272,38 +277,24 @@ function mostrarModalComparacion(arbolAVL, vuelos) {
       overflow:hidden;display:flex;flex-direction:column;gap:1rem;
       box-shadow:0 20px 60px rgba(0,0,0,.3);
     ">
-      <!-- Encabezado del modal -->
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <h2 style="font-size:1.15rem;font-weight:700;margin:0">
-          🌳 Comparación: AVL vs BST
-        </h2>
+        <h2 style="font-size:1.15rem;font-weight:700;margin:0">🌳 Comparación: AVL vs BST</h2>
         <button id="btn-cerrar-comparacion" style="
           border:none;background:#f3f4f6;border-radius:8px;
-          padding:.45rem .9rem;cursor:pointer;font-weight:600;font-size:.9rem;
-        ">✕ Cerrar</button>
+          padding:.45rem .9rem;cursor:pointer;font-weight:600;font-size:.9rem;">✕ Cerrar</button>
       </div>
-
-      <!-- Dos columnas: AVL a la izquierda, BST a la derecha -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;flex:1;min-height:0;">
-
-        <!-- Columna AVL -->
         <div style="display:flex;flex-direction:column;gap:.5rem;">
-          <h3 style="margin:0;font-size:1rem;font-weight:700;color:#2563eb">
-            Árbol AVL — Balanceado ✅
-          </h3>
+          <h3 style="margin:0;font-size:1rem;font-weight:700;color:#2563eb">Árbol AVL — Balanceado ✅</h3>
           <p id="stats-avl" style="margin:0;font-size:.83rem;color:#6b7280">Calculando…</p>
-          <div style="flex:1;min-height:350px;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;position:relative;">
+          <div style="flex:1;min-height:350px;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
             <canvas id="canvas-avl-comparacion" style="width:100%;height:100%;display:block;"></canvas>
           </div>
         </div>
-
-        <!-- Columna BST -->
         <div style="display:flex;flex-direction:column;gap:.5rem;">
-          <h3 style="margin:0;font-size:1rem;font-weight:700;color:#7c3aed">
-            Árbol BST — Sin Balanceo ⚠️
-          </h3>
+          <h3 style="margin:0;font-size:1rem;font-weight:700;color:#7c3aed">Árbol BST — Sin Balanceo ⚠️</h3>
           <p id="stats-bst" style="margin:0;font-size:.83rem;color:#6b7280">Calculando…</p>
-          <div style="flex:1;min-height:350px;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;position:relative;">
+          <div style="flex:1;min-height:350px;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
             <canvas id="canvas-bst-comparacion" style="width:100%;height:100%;display:block;"></canvas>
           </div>
         </div>
@@ -312,31 +303,22 @@ function mostrarModalComparacion(arbolAVL, vuelos) {
   `;
 
   document.body.appendChild(fondo);
-
-  // Cerrar al hacer clic en el botón o en el fondo oscuro
   document.getElementById("btn-cerrar-comparacion")
     .addEventListener("click", () => fondo.remove());
   fondo.addEventListener("click", (e) => { if (e.target === fondo) fondo.remove(); });
 
-  // Dibujar ambos árboles tras renderizar el DOM
   requestAnimationFrame(() => {
-    // Árbol AVL
-    const vizAVL = new TreeVisualizer("canvas-avl-comparacion", {
-      treeType: "avl", xSpacing: 55, ySpacing: 70, nodeRadius: 22,
-    });
+    const vizAVL = new TreeVisualizer("canvas-avl-comparacion", { treeType: "avl", xSpacing: 55, ySpacing: 70, nodeRadius: 22 });
     vizAVL.draw(arbolAVL);
-    const statsAVL = vizAVL.getStats(arbolAVL);
+    const sA = vizAVL.getStats(arbolAVL);
     document.getElementById("stats-avl").innerHTML =
-      `Raíz: <strong>${statsAVL.root}</strong> &nbsp;|&nbsp; Profundidad: <strong>${statsAVL.depth}</strong> &nbsp;|&nbsp; Hojas: <strong>${statsAVL.leaves}</strong>`;
+      `Raíz: <strong>${sA.root}</strong> &nbsp;|&nbsp; Profundidad: <strong>${sA.depth}</strong> &nbsp;|&nbsp; Hojas: <strong>${sA.leaves}</strong>`;
 
-    // Árbol BST
-    const vizBST = new TreeVisualizer("canvas-bst-comparacion", {
-      treeType: "bst", xSpacing: 55, ySpacing: 70, nodeRadius: 22,
-    });
+    const vizBST = new TreeVisualizer("canvas-bst-comparacion", { treeType: "bst", xSpacing: 55, ySpacing: 70, nodeRadius: 22 });
     vizBST.draw(arbolBST);
-    const statsBST = vizBST.getStats(arbolBST);
+    const sB = vizBST.getStats(arbolBST);
     document.getElementById("stats-bst").innerHTML =
-      `Raíz: <strong>${statsBST.root}</strong> &nbsp;|&nbsp; Profundidad: <strong>${statsBST.depth}</strong> &nbsp;|&nbsp; Hojas: <strong>${statsBST.leaves}</strong>`;
+      `Raíz: <strong>${sB.root}</strong> &nbsp;|&nbsp; Profundidad: <strong>${sB.depth}</strong> &nbsp;|&nbsp; Hojas: <strong>${sB.leaves}</strong>`;
   });
 }
 
@@ -344,9 +326,10 @@ function mostrarModalComparacion(arbolAVL, vuelos) {
 // INSERCIÓN DE VUELOS
 // ════════════════════════════════════════════════════════════
 
-/** Recoge los datos del formulario y llama al backend para insertar el vuelo. */
 async function manejarInsercion(e) {
   e.preventDefault();
+  const btn = e.target.querySelector("button[type=submit]");
+  setLoading(btn, true, "Insertando…");
   try {
     const datos = {
       codigo:     document.getElementById("input-codigo").value.trim(),
@@ -360,7 +343,6 @@ async function manejarInsercion(e) {
       prioridad:  parseInt(document.getElementById("input-prioridad").value),
     };
 
-    // Validaciones básicas antes de llamar al backend
     if (!datos.codigo || !datos.origen || !datos.destino) {
       mostrarToast("Completa los campos obligatorios: código, origen y destino.", "warning");
       return;
@@ -372,15 +354,16 @@ async function manejarInsercion(e) {
 
     const respuesta = await insertFlight(datos);
     arbolActual = respuesta.data;
-    actualizarInterfaz();
+    await actualizarInterfaz();
     limpiarFormulario();
     mostrarToast(`Vuelo ${datos.codigo} insertado correctamente.`, "success");
   } catch (err) {
     mostrarToast(`Error al insertar: ${err.message}`, "error");
+  } finally {
+    setLoading(btn, false, "Insertar");
   }
 }
 
-/** Limpia todos los campos del formulario de inserción. */
 function limpiarFormulario() {
   document.getElementById("form-insert").reset();
 }
@@ -389,54 +372,77 @@ function limpiarFormulario() {
 // ELIMINACIÓN / CANCELACIÓN
 // ════════════════════════════════════════════════════════════
 
-/** Elimina únicamente el nodo del vuelo indicado (sin afectar descendientes). */
+/**
+ * Elimina únicamente el nodo indicado.
+ * Sus hijos se reorganizan mediante el predecesor inorden y el árbol se rebalancea.
+ *
+ * NOTA: con el bug de _delete_with_two_children corregido en el backend,
+ * esta operación ahora funciona correctamente para TODOS los casos
+ * (hoja, un hijo, dos hijos).
+ */
 async function manejarEliminacion() {
   const codigo = document.getElementById("input-delete-codigo").value.trim();
   if (!codigo) { mostrarToast("Ingresa el código del vuelo a eliminar.", "warning"); return; }
-  if (!confirm(`¿Eliminar el vuelo ${codigo}? (solo este nodo, los hijos se reorganizan)`)) return;
+  if (!confirm(`¿Eliminar el vuelo ${codigo}? (solo este nodo)`)) return;
 
+  const btn = document.getElementById("btn-delete");
+  setLoading(btn, true, "Eliminando…");
   try {
     const respuesta = await deleteFlight(codigo);
     arbolActual = respuesta.data;
-    actualizarInterfaz();
+    await actualizarInterfaz();
     document.getElementById("input-delete-codigo").value = "";
-    mostrarToast(`Vuelo ${codigo} eliminado.`, "success");
+    mostrarToast(`Vuelo ${codigo} eliminado y árbol rebalanceado.`, "success");
   } catch (err) {
     mostrarToast(`Error: ${err.message}`, "error");
-  }
-}
-
-/** Cancela el vuelo indicado Y toda su subrama (todos sus descendientes). */
-async function manejarCancelacion() {
-  const codigo = document.getElementById("input-delete-codigo").value.trim();
-  if (!codigo) { mostrarToast("Ingresa el código del vuelo a cancelar.", "warning"); return; }
-  if (!confirm(`¿Cancelar ${codigo} y TODOS sus descendientes? Esta acción no se puede deshacer con un solo Ctrl+Z.`)) return;
-
-  try {
-    const respuesta = await cancelSubtree(codigo);
-    arbolActual = respuesta.data;
-    actualizarInterfaz();
-    document.getElementById("input-delete-codigo").value = "";
-    mostrarToast(`Vuelo ${codigo} y todos sus descendientes han sido cancelados.`, "success");
-  } catch (err) {
-    mostrarToast(`Error: ${err.message}`, "error");
+  } finally {
+    setLoading(btn, false, "Eliminar Nodo");
   }
 }
 
 /**
- * Llama al backend para encontrar y eliminar el nodo de menor rentabilidad
- * (y toda su subrama). Fórmula: pasajeros × precioFinal − promoción + penalización.
+ * Cancela el vuelo indicado Y toda su subrama (descendientes).
+ * Esta operación es más agresiva que la eliminación simple.
+ */
+async function manejarCancelacion() {
+  const codigo = document.getElementById("input-delete-codigo").value.trim();
+  if (!codigo) { mostrarToast("Ingresa el código del vuelo a cancelar.", "warning"); return; }
+  if (!confirm(`¿Cancelar ${codigo} y TODOS sus descendientes?`)) return;
+
+  const btn = document.getElementById("btn-cancel");
+  setLoading(btn, true, "Cancelando…");
+  try {
+    const respuesta = await cancelSubtree(codigo);
+    arbolActual = respuesta.data;
+    await actualizarInterfaz();
+    document.getElementById("input-delete-codigo").value = "";
+    mostrarToast(`Vuelo ${codigo} y todos sus descendientes han sido cancelados.`, "success");
+  } catch (err) {
+    mostrarToast(`Error: ${err.message}`, "error");
+  } finally {
+    setLoading(btn, false, "Cancelar Vuelo + Descendientes");
+  }
+}
+
+/**
+ * Elimina el vuelo de menor rentabilidad y toda su subrama.
+ * Fórmula: pasajeros × precioFinal − promoción + penalización.
  * Desempate: mayor profundidad → código más grande.
  */
 async function manejarEliminarMenorRentabilidad() {
   if (!confirm("¿Eliminar el vuelo de menor rentabilidad y toda su subrama?")) return;
+
+  const btn = document.getElementById("btn-delete-rental-node");
+  setLoading(btn, true, "Calculando…");
   try {
     const respuesta = await deleteLowestProfit();
     arbolActual = respuesta.tree;
-    actualizarInterfaz();
+    await actualizarInterfaz();
     mostrarToast(respuesta.message, "success");
   } catch (err) {
     mostrarToast(`Error: ${err.message}`, "error");
+  } finally {
+    setLoading(btn, false, "Eliminar Nodo Menor Rentabilidad");
   }
 }
 
@@ -444,30 +450,31 @@ async function manejarEliminarMenorRentabilidad() {
 // DESHACER / EXPORTAR
 // ════════════════════════════════════════════════════════════
 
-/** Deshace la última acción (equivalente a Ctrl+Z). */
 async function manejarDeshacer() {
+  const btn = document.getElementById("btn-undo");
+  setLoading(btn, true, "Deshaciendo…");
   try {
     const respuesta = await undoAction();
     arbolActual = respuesta.data;
-    actualizarInterfaz();
+    await actualizarInterfaz();
     mostrarToast("Acción deshecha correctamente.", "success");
   } catch (err) {
     mostrarToast(`Error al deshacer: ${err.message}`, "error");
+  } finally {
+    setLoading(btn, false, "Deshacer (Ctrl+Z)");
   }
 }
 
-/** Exporta el árbol completo como archivo JSON descargable. */
 async function manejarExportar() {
   try {
     const respuesta = await exportTree();
     const json      = JSON.stringify(respuesta.data, null, 2);
     const blob      = new Blob([json], { type: "application/json" });
     const url       = URL.createObjectURL(blob);
-    const enlace    = Object.assign(document.createElement("a"), {
+    Object.assign(document.createElement("a"), {
       href:     url,
       download: `skybalance-${new Date().toISOString().split("T")[0]}.json`,
-    });
-    enlace.click();
+    }).click();
     URL.revokeObjectURL(url);
     mostrarToast("Árbol exportado correctamente.", "success");
   } catch (err) {
@@ -479,12 +486,8 @@ async function manejarExportar() {
 // MODO ESTRÉS
 // ════════════════════════════════════════════════════════════
 
-/**
- * Activa o desactiva el modo estrés según el estado del interruptor.
- * En modo estrés el árbol no se rebalancea automáticamente tras cada operación.
- * Al desactivarlo se dispara un rebalanceo global automático.
- */
 async function manejarModoEstres(e) {
+  const btnSaveVersion = document.getElementById("btn-save-version");
   const activando      = e.target.checked;
   const btnRebalancear = document.getElementById("btn-rebalance");
   const btnVerificar   = document.getElementById("btn-verify-avl");
@@ -496,48 +499,53 @@ async function manejarModoEstres(e) {
       modoEstresActivo = true;
       btnRebalancear.disabled = false;
       btnVerificar.disabled   = false;
+      btnSaveVersion.disabled = false;
       indicador.textContent   = "⚠ Modo Estrés";
       indicador.classList.add("stress-mode");
-      await cargarArbol(); // Recargar para mostrar los nodos con esCritico
+      await cargarArbol();
       mostrarToast("Modo estrés activado. El balanceo automático está deshabilitado.", "warning");
     } catch (err) {
-      e.target.checked = false; // Revertir el toggle si hubo error
+      e.target.checked = false;
       mostrarToast(`Error: ${err.message}`, "error");
     }
   } else {
     try {
-      // La respuesta incluye { stressMode, rebalance, tree }
+      // respuesta.data = { stressMode: false, rebalance: {...}, tree: <arbolJSON> }
       const respuesta  = await deactivateStress();
       modoEstresActivo = false;
       arbolActual      = respuesta.data.tree;
       btnRebalancear.disabled = true;
       btnVerificar.disabled   = true;
+      btnSaveVersion.disabled = true;
       indicador.textContent   = "Modo Normal";
       indicador.classList.remove("stress-mode");
-      actualizarInterfaz();
-      mostrarToast("Modo estrés desactivado. El árbol fue rebalanceado automáticamente.", "success");
+      await actualizarInterfaz();
+      mostrarToast("Modo estrés desactivado. Árbol rebalanceado automáticamente.", "success");
     } catch (err) {
-      e.target.checked = true; // Revertir el toggle si hubo error
+      e.target.checked = true;
       mostrarToast(`Error: ${err.message}`, "error");
     }
   }
 }
 
-/** Dispara un rebalanceo global del árbol mientras el modo estrés está activo. */
 async function manejarRebalanceo() {
   if (!confirm("¿Rebalancear todo el árbol ahora?")) return;
+  const btn = document.getElementById("btn-rebalance");
+  setLoading(btn, true, "Rebalanceando…");
   try {
     await rebalanceStress();
     await cargarArbol();
     mostrarToast("Rebalanceo global completado.", "success");
   } catch (err) {
     mostrarToast(`Error: ${err.message}`, "error");
+  } finally {
+    setLoading(btn, false, "Rebalancear Todo");
   }
 }
 
 /**
- * Solicita al backend la auditoría AVL (solo disponible en modo estrés)
- * y muestra un modal con el reporte detallado de nodos inconsistentes.
+ * Verifica las propiedades AVL en todo el árbol (solo en modo estrés)
+ * y muestra un modal con el reporte de nodos inconsistentes.
  */
 async function manejarAuditoriaAVL() {
   try {
@@ -548,10 +556,8 @@ async function manejarAuditoriaAVL() {
   }
 }
 
-/** Muestra el modal de resultados de la auditoría AVL. */
 function mostrarModalAuditoria(respuesta) {
   document.getElementById("modal-auditoria")?.remove();
-
   const inconsistentes = respuesta.inconsistentNodes || [];
   const esValido       = inconsistentes.length === 0;
 
@@ -563,17 +569,12 @@ function mostrarModalAuditoria(respuesta) {
   `;
 
   fondo.innerHTML = `
-    <div style="
-      background:#fff;border-radius:12px;padding:1.5rem;
-      width:480px;max-width:95vw;
-      box-shadow:0 16px 48px rgba(0,0,0,.28);
-    ">
+    <div style="background:#fff;border-radius:12px;padding:1.5rem;
+      width:480px;max-width:95vw;box-shadow:0 16px 48px rgba(0,0,0,.28);">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
         <h2 style="margin:0;font-size:1.1rem;font-weight:700;">🔍 Auditoría AVL</h2>
         <button id="btn-cerrar-auditoria" style="border:none;background:#f3f4f6;border-radius:6px;padding:.4rem .8rem;cursor:pointer;font-weight:600;">✕</button>
       </div>
-
-      <!-- Resultado general -->
       <div style="padding:.8rem;border-radius:8px;margin-bottom:1rem;
         background:${esValido ? "#f0fdf4" : "#fff1f2"};
         border-left:4px solid ${esValido ? "#22c55e" : "#ef4444"};">
@@ -581,29 +582,20 @@ function mostrarModalAuditoria(respuesta) {
           ? "✅ El árbol cumple la propiedad AVL en todos sus nodos."
           : "❌ Se encontraron nodos que violan la propiedad AVL."}</strong>
       </div>
-
-      <!-- Lista de nodos inconsistentes (si los hay) -->
       ${inconsistentes.length > 0 ? `
-        <p style="font-size:.88rem;margin-bottom:.5rem;font-weight:600;">
-          Nodos inconsistentes (|FE| > 1):
-        </p>
+        <p style="font-size:.88rem;margin-bottom:.5rem;font-weight:600;">Nodos inconsistentes (|FE| > 1):</p>
         <ul style="margin:0;padding-left:1.2rem;font-size:.85rem;color:#6b7280;">
           ${inconsistentes.map(n => `<li>${n}</li>`).join("")}
-        </ul>
-      ` : ""}
-
+        </ul>` : ""}
       <div style="margin-top:1rem;text-align:right;">
         <button id="btn-aceptar-auditoria" style="
           border:none;background:#2563eb;color:#fff;
-          border-radius:8px;padding:.5rem 1.2rem;cursor:pointer;font-weight:600;">
-          Aceptar
-        </button>
+          border-radius:8px;padding:.5rem 1.2rem;cursor:pointer;font-weight:600;">Aceptar</button>
       </div>
     </div>
   `;
 
   document.body.appendChild(fondo);
-
   const cerrar = () => fondo.remove();
   document.getElementById("btn-cerrar-auditoria").addEventListener("click", cerrar);
   document.getElementById("btn-aceptar-auditoria").addEventListener("click", cerrar);
@@ -611,27 +603,20 @@ function mostrarModalAuditoria(respuesta) {
 }
 
 // ════════════════════════════════════════════════════════════
-// RECORRIDOS 
+// RECORRIDOS
 // ════════════════════════════════════════════════════════════
 
 /**
  * Obtiene los recorridos precalculados del backend y los muestra en pantalla.
- * Los recorridos InOrder, PreOrder, PostOrder y BFS ya están implementados
- * en el backend (AvlTree.py); no es necesario duplicarlos aquí.
+ * Los algoritmos InOrder, PreOrder, PostOrder y BFS están implementados en
+ * AvlTree.py — no se duplica la lógica aquí.
  */
 async function manejarRecorrido(tipo) {
   try {
-    const respuesta = await getMetrics();
+    const respuesta  = await getMetrics();
     const recorridos = respuesta.data.recorridos;
+    const lista      = recorridos?.[tipo];
 
-    const mapa = {
-      inorder:   recorridos?.inorder,
-      preorder:  recorridos?.preorder,
-      postorder: recorridos?.postorder,
-      bfs:       recorridos?.bfs,
-    };
-
-    const lista = mapa[tipo];
     if (!lista || lista.length === 0) {
       mostrarToast("El árbol está vacío.", "warning");
       return;
@@ -652,17 +637,20 @@ async function manejarRecorrido(tipo) {
 // ════════════════════════════════════════════════════════════
 
 /**
- * Actualiza el panel de métricas con los datos devueltos por el backend.
- * Estructura de respuesta del backend:
+ * Actualiza el panel de métricas con los datos del backend.
+ *
+ * Estructura de la respuesta:
  *   { altura, rotaciones:{LL,RR,LR,RL}, cancelacionesMasivas, hojas, recorridos }
+ *
+ * Las rotaciones se muestran como totales acumulados desde que se cargó el árbol.
+ * Al cargar un árbol nuevo (createTree) el backend crea un AvlTree() fresco,
+ * por lo que los contadores se reinician automáticamente.
  */
 async function actualizarMetricas() {
   try {
     const respuesta = await getMetrics();
     const m   = respuesta.data;
     const rot = m.rotaciones || {};
-
-    // Total de rotaciones (suma de todos los tipos)
     const totalRotaciones = (rot.LL || 0) + (rot.RR || 0) + (rot.LR || 0) + (rot.RL || 0);
 
     document.getElementById("metric-altura").textContent     = m.altura     ?? "-";
@@ -674,17 +662,16 @@ async function actualizarMetricas() {
     document.getElementById("metric-lr").textContent         = rot.LR       ?? "0";
     document.getElementById("metric-rl").textContent         = rot.RL       ?? "0";
   } catch {
-    // Las métricas no son críticas; se falla en silencio
+    // Las métricas son secundarias; un fallo no debe romper la UI
   }
 }
 
-/** Cuenta el número total de nodos del árbol local de forma recursiva. */
+/** Cuenta el número total de nodos del árbol local. */
 function contarNodos(nodo) {
   if (!nodo) return 0;
   return 1 + contarNodos(nodo.izquierdo) + contarNodos(nodo.derecho);
 }
 
-/** Reinicia todos los contadores de métricas a su valor inicial. */
 function limpiarMetricas() {
   ["metric-altura", "metric-nodos", "metric-hojas",
    "metric-rotaciones", "metric-ll", "metric-rr", "metric-lr", "metric-rl"]
@@ -694,15 +681,9 @@ function limpiarMetricas() {
 }
 
 // ════════════════════════════════════════════════════════════
-// PROFUNDIDAD CRÍTICA (sistema de penalización)
+// PROFUNDIDAD CRÍTICA
 // ════════════════════════════════════════════════════════════
 
-/**
- * Actualiza el límite de profundidad crítica.
- * Si el modo estrés está activo, llama al backend para que recalcule
- * el flag esCritico y el precio de todos los nodos afectados.
- * Si no está activo, guarda el valor localmente para usarlo al activar el modo estrés.
- */
 async function manejarActualizarProfundidad() {
   const profundidad = parseInt(document.getElementById("input-critical-depth").value);
   if (isNaN(profundidad) || profundidad < 0) {
@@ -712,7 +693,7 @@ async function manejarActualizarProfundidad() {
 
   if (!modoEstresActivo) {
     mostrarToast(
-      `Profundidad límite guardada en ${profundidad}. Se aplicará cuando actives el modo estrés.`,
+      `Profundidad límite guardada en ${profundidad}. Se aplicará al activar el modo estrés.`,
       "info"
     );
     return;
@@ -721,7 +702,7 @@ async function manejarActualizarProfundidad() {
   try {
     const respuesta = await setDepthLimit(profundidad);
     arbolActual = respuesta.tree;
-    actualizarInterfaz();
+    await actualizarInterfaz();
     mostrarToast(`Profundidad crítica actualizada a ${profundidad}.`, "success");
   } catch (err) {
     mostrarToast(`Error: ${err.message}`, "error");
@@ -732,7 +713,6 @@ async function manejarActualizarProfundidad() {
 // VERSIONES
 // ════════════════════════════════════════════════════════════
 
-/** Guarda una instantánea con nombre del estado actual del árbol. */
 async function manejarGuardarVersion() {
   const nombre = document.getElementById("input-version-name").value.trim();
   if (!nombre) { mostrarToast("Escribe un nombre para la versión.", "warning"); return; }
@@ -747,7 +727,6 @@ async function manejarGuardarVersion() {
   }
 }
 
-/** Refresca la lista de versiones guardadas en el panel derecho. */
 async function actualizarListaVersiones() {
   try {
     const respuesta  = await getVersions();
@@ -777,17 +756,16 @@ async function actualizarListaVersiones() {
       contenedor.appendChild(elemento);
     });
   } catch {
-    // No es crítico; se falla en silencio
+    // No es crítico
   }
 }
 
-/** Restaura el árbol a una versión guardada previamente. */
 async function manejarCargarVersion(nombre) {
-  if (!confirm(`¿Restaurar la versión "${nombre}"? El árbol actual se reemplazará.`)) return;
+  if (!confirm(`¿Restaurar la versión "${nombre}"?`)) return;
   try {
     const respuesta = await loadVersion(nombre);
     arbolActual = respuesta.data;
-    actualizarInterfaz();
+    await actualizarInterfaz();
     mostrarToast(`Versión "${nombre}" restaurada.`, "success");
   } catch (err) {
     mostrarToast(`Error al cargar versión: ${err.message}`, "error");
@@ -795,26 +773,47 @@ async function manejarCargarVersion(nombre) {
 }
 
 // ════════════════════════════════════════════════════════════
-// NOTIFICACIONES (TOAST)
+// UTILIDADES
 // ════════════════════════════════════════════════════════════
 
 /**
+ * Activa o desactiva el estado de carga en un botón.
+ * Mientras está cargando, el botón muestra el texto de carga y queda deshabilitado
+ * para evitar doble clic durante la operación asíncrona.
+ *
+ * @param {HTMLButtonElement} btn   - El botón a modificar.
+ * @param {boolean}           activo - True para activar, False para restaurar.
+ * @param {string}            texto  - Texto a mostrar mientras carga.
+ */
+function setLoading(btn, activo, texto) {
+  if (!btn) return;
+  if (activo) {
+    btn.dataset.textoOriginal = btn.textContent;
+    btn.textContent  = texto;
+    btn.disabled     = true;
+    btn.style.opacity = "0.7";
+  } else {
+    btn.textContent  = btn.dataset.textoOriginal || texto;
+    btn.disabled     = false;
+    btn.style.opacity = "";
+  }
+}
+
+/**
  * Muestra una notificación tipo toast en la esquina superior derecha.
- * @param {string} mensaje            - Texto a mostrar.
+ * @param {string}   mensaje            - Texto a mostrar.
  * @param {'success'|'error'|'warning'|'info'} tipo - Tipo de notificación.
- * @param {number} [duracion=3500]    - Milisegundos antes de que desaparezca.
+ * @param {number}   [duracion=3500]    - Milisegundos antes de desaparecer.
  */
 function mostrarToast(mensaje, tipo = "info", duracion = 3500) {
   const iconos = { success: "✓", error: "✗", warning: "⚠", info: "ℹ" };
-
-  const toast = document.createElement("div");
+  const toast  = document.createElement("div");
   toast.className = `toast ${tipo}`;
   toast.innerHTML = `
     <span class="toast-icon">${iconos[tipo] ?? "ℹ"}</span>
     <span class="toast-message">${mensaje}</span>
     <button class="toast-close" onclick="this.parentElement.remove()">×</button>
   `;
-
   document.getElementById("toast-container").appendChild(toast);
   setTimeout(() => toast.remove(), duracion);
 }
