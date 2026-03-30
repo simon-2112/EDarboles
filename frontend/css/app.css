@@ -520,7 +520,7 @@ input:focus {
    TOAST NOTIFICATIONS
    ===================================================== */
 
-.toast-container {
+.sky-toast-container {
     position: fixed;
     top: 90px;
     right: 20px;
@@ -531,7 +531,7 @@ input:focus {
     max-width: 350px;
 }
 
-.toast {
+.sky-toast {
     padding: 1rem 1.5rem;
     background: var(--white);
     border-radius: 8px;
@@ -542,16 +542,16 @@ input:focus {
     animation: slideIn 0.3s ease-out;
 }
 
-.toast-icon {
+.sky-toast-icon {
     font-size: 1.5rem;
 }
 
-.toast-message {
+.sky-toast-message {
     flex: 1;
     font-size: 0.9rem;
 }
 
-.toast-close {
+.sky-toast-close {
     background: none;
     border: none;
     font-size: 1.2rem;
@@ -559,19 +559,19 @@ input:focus {
     color: var(--gray);
 }
 
-.toast.success {
+.sky-toast.success {
     border-left: 4px solid var(--success);
 }
 
-.toast.error {
+.sky-toast.error {
     border-left: 4px solid var(--danger);
 }
 
-.toast.warning {
+.sky-toast.warning {
     border-left: 4px solid var(--warning);
 }
 
-.toast.info {
+.sky-toast.info {
     border-left: 4px solid var(--info);
 }
 

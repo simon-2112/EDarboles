@@ -620,9 +620,11 @@ async function manejarRebalanceo() {
   const btn = document.getElementById("btn-rebalance");
   setLoading(btn, true, "Rebalanceando…");
   try {
-    await rebalanceStress();
+    const respuesta = await rebalanceStress();
+    const { nodes, rotations } = respuesta.data;
+    const totalRot = (rotations.LL||0) + (rotations.RR||0) + (rotations.LR||0) + (rotations.RL||0);
+    mostrarToast(`Rebalanceo completado. Nodos: ${nodes} | Rotaciones: ${totalRot}`, "success");
     await cargarArbol();
-    mostrarToast("Rebalanceo global completado.", "success");
   } catch (err) {
     mostrarToast(`Error: ${err.message}`, "error");
   } finally {
@@ -922,11 +924,12 @@ function setLoading(btn, activo, texto) {
 function mostrarToast(mensaje, tipo = "info", duracion = 3500) {
   const iconos = { success: "✓", error: "✗", warning: "⚠", info: "ℹ" };
   const toast = document.createElement("div");
-  toast.className = `toast ${tipo}`;
+  toast.className = `sky-toast ${tipo}`;
+  console.log("TOAST DEFINIDO");
   toast.innerHTML = `
-    <span class="toast-icon">${iconos[tipo] ?? "ℹ"}</span>
-    <span class="toast-message">${mensaje}</span>
-    <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+    <span class="sky-toast-icon">${iconos[tipo] ?? "ℹ"}</span>
+    <span class="sky-toast-message">${mensaje}</span>
+    <button class="sky-toast-close" onclick="this.parentElement.remove()">×</button>
   `;
   document.getElementById("toast-container").appendChild(toast);
   setTimeout(() => toast.remove(), duracion);

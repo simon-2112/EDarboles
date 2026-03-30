@@ -5,7 +5,7 @@ class PenaltyService:
     """
     def __init__(self, treeService):
         self.treeService = treeService
-        self.depthLimit = 0
+        self.depthLimit = None
 
     def setDepthLimit(self, limit):
         self.depthLimit = limit
@@ -13,6 +13,8 @@ class PenaltyService:
 
     def applyPenalty(self):
         root = self.treeService.avl.root
+        if self.depthLimit is None:
+            return 
         self._traverseAndApply(root, 0)
 
     def _traverseAndApply(self, node, depth):
