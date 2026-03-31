@@ -682,3 +682,45 @@ input:focus {
 .tree-node-conflict {
     fill: #FFD93D;
 }
+
+
+/* Busqueda de vuelos */
+.flight-info-card {
+    background: var(--light-gray);
+    border-radius: 8px;
+    padding: 0.8rem;
+    border-left: 4px solid var(--primary);
+}
+
+.flight-info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.4rem;
+}
+
+.flight-codigo {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.flight-info-route {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--dark);
+    margin-bottom: 0.2rem;
+}
+
+.fi-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+    color: white;
+    margin-left: 0.3rem;
+}
+
+.fi-badge.promo  { background: var(--success); }
+.fi-badge.alerta { background: var(--danger); }
+.fi-badge.critico { background: var(--warning); color: var(--dark); }

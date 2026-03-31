@@ -96,6 +96,12 @@ document.addEventListener("DOMContentLoaded", () => {
     .getElementById("btn-reset-view")
     .addEventListener("click", () => visualizador.resetView());
 
+  // ── Buscar vuelos ──────────────────────────────────────────────────
+  document.getElementById("btn-search-flight")
+    .addEventListener("click", manejarBusquedaVuelo);
+  document.getElementById("input-search-codigo")
+      .addEventListener("keydown", (e) => { if (e.key === "Enter") manejarBusquedaVuelo(); });
+
   // ── Recorridos ────────────────────────────────────────────
   ["inorder", "preorder", "postorder", "bfs"].forEach((tipo) =>
     document
@@ -329,21 +335,21 @@ function mostrarModalComparacion(arbolAVL, vuelos) {
       box-shadow:0 20px 60px rgba(0,0,0,.3);
     ">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <h2 style="font-size:1.15rem;font-weight:700;margin:0">🌳 Comparación: AVL vs BST</h2>
+        <h2 style="font-size:1.15rem;font-weight:700;margin:0"> Comparación: AVL vs BST</h2>
         <button id="btn-cerrar-comparacion" style="
           border:none;background:#f3f4f6;border-radius:8px;
           padding:.45rem .9rem;cursor:pointer;font-weight:600;font-size:.9rem;">✕ Cerrar</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;flex:1;min-height:0;">
         <div style="display:flex;flex-direction:column;gap:.5rem;">
-          <h3 style="margin:0;font-size:1rem;font-weight:700;color:#2563eb">Árbol AVL — Balanceado ✅</h3>
+          <h3 style="margin:0;font-size:1rem;font-weight:700;color:#2563eb">Árbol AVL — Balanceado </h3>
           <p id="stats-avl" style="margin:0;font-size:.83rem;color:#6b7280">Calculando…</p>
           <div style="flex:1;min-height:350px;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
             <canvas id="canvas-avl-comparacion" style="width:100%;height:100%;display:block;"></canvas>
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:.5rem;">
-          <h3 style="margin:0;font-size:1rem;font-weight:700;color:#7c3aed">Árbol BST — Sin Balanceo ⚠️</h3>
+          <h3 style="margin:0;font-size:1rem;font-weight:700;color:#7c3aed">Árbol BST — Sin Balanceo </h3>
           <p id="stats-bst" style="margin:0;font-size:.83rem;color:#6b7280">Calculando…</p>
           <div style="flex:1;min-height:350px;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
             <canvas id="canvas-bst-comparacion" style="width:100%;height:100%;display:block;"></canvas>
@@ -661,7 +667,7 @@ function mostrarModalAuditoria(respuesta) {
     <div style="background:#fff;border-radius:12px;padding:1.5rem;
       width:480px;max-width:95vw;box-shadow:0 16px 48px rgba(0,0,0,.28);">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-        <h2 style="margin:0;font-size:1.1rem;font-weight:700;">🔍 Auditoría AVL</h2>
+        <h2 style="margin:0;font-size:1.1rem;font-weight:700;"> Auditoría AVL</h2>
         <button id="btn-cerrar-auditoria" style="border:none;background:#f3f4f6;border-radius:6px;padding:.4rem .8rem;cursor:pointer;font-weight:600;">✕</button>
       </div>
       <div style="padding:.8rem;border-radius:8px;margin-bottom:1rem;
@@ -669,8 +675,8 @@ function mostrarModalAuditoria(respuesta) {
         border-left:4px solid ${esValido ? "#22c55e" : "#ef4444"};">
         <strong>${
           esValido
-            ? "✅ El árbol cumple la propiedad AVL en todos sus nodos. Nodos consistentes ( |BF| ∈ { -1, 0, 1 } )"
-            : "❌ Se encontraron nodos que violan la propiedad AVL."
+            ? " El árbol cumple la propiedad AVL en todos sus nodos. Nodos consistentes ( |BF| ∈ { -1, 0, 1 } )"
+            : " Se encontraron nodos que violan la propiedad AVL."
         }</strong>
       </div>
       ${
@@ -732,6 +738,51 @@ async function manejarRecorrido(tipo) {
   } catch (err) {
     mostrarToast(`Error al obtener el recorrido: ${err.message}`, "error");
   }
+}
+
+// ════════════════════════════════════════════════════════════
+// BÚSQUEDA DE VUELOS
+// ════════════════════════════════════════════════════════════
+
+async function manejarBusquedaVuelo() {
+    const codigo = document.getElementById("input-search-codigo").value.trim();
+    if (!codigo) {
+        mostrarToast("Ingresa un código de vuelo.", "warning");
+        return;
+    }
+
+    const resultado = document.getElementById("flight-info-result");
+    const notFound = document.getElementById("flight-info-notfound");
+    resultado.classList.add("hidden");
+    notFound.classList.add("hidden");
+
+    try {
+        const respuesta = await searchFlight(codigo);
+        const f = respuesta.data;
+
+        document.getElementById("fi-codigo").textContent = f.codigo;
+        document.getElementById("fi-origen").textContent = f.origen;
+        document.getElementById("fi-destino").textContent = f.destino;
+        document.getElementById("fi-hora").textContent = f.horaSalida;
+        document.getElementById("fi-pasajeros").textContent = f.pasajeros;
+        document.getElementById("fi-precio-base").textContent = `$${f.precioBase.toFixed(2)}`;
+        document.getElementById("fi-precio-final").textContent = `$${f.precioFinal.toFixed(2)}`;
+        document.getElementById("fi-prioridad").textContent = f.prioridad;
+        document.getElementById("fi-altura").textContent = f.altura;
+        document.getElementById("fi-bf").textContent = f.factorEquilibrio;
+        document.getElementById("fi-critico").textContent = f.esCritico ? "Sí ⚠" : "No";
+
+        // Badges de estado
+        let badges = "";
+        if (f.promocion) badges += `<span class="fi-badge promo">PROMO</span>`;
+        if (f.alerta)    badges += `<span class="fi-badge alerta">ALERTA</span>`;
+        if (f.esCritico) badges += `<span class="fi-badge critico">CRÍTICO</span>`;
+        document.getElementById("fi-badges").innerHTML = badges;
+
+        resultado.classList.remove("hidden");
+    } catch {
+        notFound.classList.remove("hidden");
+    }
 }
 
 // ════════════════════════════════════════════════════════════
