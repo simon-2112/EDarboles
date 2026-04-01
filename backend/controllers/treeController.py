@@ -1,9 +1,11 @@
-from flask import Blueprint,jsonify, request
+from flask import Blueprint, jsonify, request
 from models.AvlTree import AvlTree
 from models.BstTree import BstTree
 from services.flightTreeService import TreeService
 from services.stressModeService import StressService
 from models.Flight import Flight
+from utils.utils import readJson
+from pathlib import Path
 
 # base route -> http://localhost:5000/api/tree
 
@@ -21,45 +23,52 @@ service = TreeService()
 stressService = StressService(service)
 
 
-#core TREE
+# core TREE
 @tree_bp.route("", methods=["GET"])
 def get_tree():
     try:
         result = service.getTreeJson()
 
-        return jsonify({
-            "status": "success",
-            "data": result
-        }), 200
+        return jsonify({"status": "success", "data": result}), 200
 
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 400
+        return jsonify({"status": "error", "message": str(e)}), 400
+
+
+# ciudades con aeropuerto
+@tree_bp.route("/ciudades", methods=["GET"])
+def get_ciudades():
+    try:
+        ciudades = (
+            Path(__file__).resolve().parent.parent
+            / "data"
+            / "ciudadesConAeropuerto.json"
+        )
+        datos = readJson(ciudades)
+
+        return jsonify({"status": "success", "data": datos}), 200
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
+
 
 @tree_bp.route("/create", methods=["POST"])
 def create_tree():
     data = request.get_json()
-    
+
     try:
         service.createTree(data)
 
         result = service.getTreeJson()
 
-        return jsonify({
-            "status": "success",
-            "data": result
-        }), 201
+        return jsonify({"status": "success", "data": result}), 201
 
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 400
+        return jsonify({"status": "error", "message": str(e)}), 400
 
-#OPERATIONS
-#cancel a node + descendants
+
+# OPERATIONS
+# cancel a node + descendants
 @tree_bp.route("/cancel/<flightCode>", methods=["DELETE"])
 def cancel_subtree(flightCode):
 
@@ -67,24 +76,28 @@ def cancel_subtree(flightCode):
         success = service.descendantsCancelation(flightCode)
 
         if not success:
-            return jsonify({
-                "status": "error",
-                "message": f"Flight {flightCode} not found"
-            }), 404
+            return (
+                jsonify(
+                    {"status": "error", "message": f"Flight {flightCode} not found"}
+                ),
+                404,
+            )
 
         result = service.getTreeJson()
 
-        return jsonify({
-            "status": "success",
-            "message": f"Subtree {flightCode} and its descendants were removed",
-            "data": result
-        }), 200
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "message": f"Subtree {flightCode} and its descendants were removed",
+                    "data": result,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 400
+        return jsonify({"status": "error", "message": str(e)}), 400
 
 
 @tree_bp.route("/insert", methods=["POST"])
@@ -101,66 +114,60 @@ def insert_flight():
             numberPassengers=data["pasajeros"],
             promotion=data["promocion"],
             alert=data["alerta"],
-            priority=data["prioridad"]
+            priority=data["prioridad"],
         )
 
         service.insertFlight(flight)
 
-        return jsonify({
-            "status": "success",
-            "message": "Flight inserted",
-            "data": service.getTreeJson()
-        }), 201
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "message": "Flight inserted",
+                    "data": service.getTreeJson(),
+                }
+            ),
+            201,
+        )
 
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 400
-        
+        return jsonify({"status": "error", "message": str(e)}), 400
+
 
 @tree_bp.route("/search/<flightCode>", methods=["GET"])
 def search_flight(flightCode):
     try:
         if node := service.searchFlight(flightCode):
-            return jsonify({
-                "status": "success",
-                "data": service.nodeToJson(node)
-            }), 200
+            return jsonify({"status": "success", "data": service.nodeToJson(node)}), 200
 
         else:
-            return jsonify({
-                "status": "error",
-                "message": "Flight not found"
-            }), 404
+            return jsonify({"status": "error", "message": "Flight not found"}), 404
 
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 400
+        return jsonify({"status": "error", "message": str(e)}), 400
+
 
 @tree_bp.route("/delete/<flightCode>", methods=["DELETE"])
 def delete_flight(flightCode):
     try:
         if success := service.deleteFlight(flightCode):
-            return jsonify({
-                "status": "success",
-                "message": "Flight deleted",
-                "data": service.getTreeJson()
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "status": "success",
+                        "message": "Flight deleted",
+                        "data": service.getTreeJson(),
+                    }
+                ),
+                200,
+            )
 
         else:
-            return jsonify({
-                "status": "error",
-                "message": "Flight not found"
-            }), 404
+            return jsonify({"status": "error", "message": "Flight not found"}), 404
 
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 400
+        return jsonify({"status": "error", "message": str(e)}), 400
+
 
 @tree_bp.route("/update/<flightCode>", methods=["PUT"])
 def update_flight(flightCode):
@@ -170,10 +177,7 @@ def update_flight(flightCode):
         deleted = service.deleteFlight(flightCode)
 
         if not deleted:
-            return jsonify({
-                "status": "error",
-                "message": "Flight not found"
-            }), 404
+            return jsonify({"status": "error", "message": "Flight not found"}), 404
 
         # insertar nuevo
         flight = Flight(
@@ -185,87 +189,78 @@ def update_flight(flightCode):
             numberPassengers=data["pasajeros"],
             promotion=data["promocion"],
             alert=data["alerta"],
-            priority=data["prioridad"]
+            priority=data["prioridad"],
         )
 
         service.insertFlight(flight)
 
-        return jsonify({
-            "status": "success",
-            "message": "Flight updated",
-            "data": service.getTreeJson()
-        }), 200
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "message": "Flight updated",
+                    "data": service.getTreeJson(),
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 400
+        return jsonify({"status": "error", "message": str(e)}), 400
 
 
-#reset / delete all the tree
+# reset / delete all the tree
 @tree_bp.route("/reset", methods=["DELETE"])
 def reset_tree():
     try:
         service.avl = AvlTree()
         service.bst = BstTree()
 
-        return jsonify({
-            "status": "success",
-            "message": "Tree reset"
-        }), 200
+        return jsonify({"status": "success", "message": "Tree reset"}), 200
 
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 400
+        return jsonify({"status": "error", "message": str(e)}), 400
 
-#CTRL-Z SYSTEM
+
+# CTRL-Z SYSTEM
+
 
 @tree_bp.route("/undo", methods=["POST"])
 def undo():
     try:
         if success := service.undoAction():
-            return jsonify({
-                "status": "success",
-                "message": "Undo successful",
-                "data": service.getTreeJson()
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "status": "success",
+                        "message": "Undo successful",
+                        "data": service.getTreeJson(),
+                    }
+                ),
+                200,
+            )
 
         else:
-            return jsonify({
-                "status": "error",
-                "message": "No actions to undo"
-            }), 400
+            return jsonify({"status": "error", "message": "No actions to undo"}), 400
 
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 400
-        
-    
+        return jsonify({"status": "error", "message": str(e)}), 400
 
-#EXPORT TREE
+
+# EXPORT TREE
+
 
 @tree_bp.route("/export", methods=["GET"])
 def export_tree():
     try:
         result = service.exportTree()
 
-        return jsonify({
-            "status": "success",
-            "data": result
-        }), 200
+        return jsonify({"status": "success", "data": result}), 200
 
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 400
+        return jsonify({"status": "error", "message": str(e)}), 400
 
-#PERSISTENCE AND VERSIONS
+    # PERSISTENCE AND VERSIONS
     """
     it need a entry from data like:
     {
@@ -273,6 +268,8 @@ def export_tree():
     }
     
     """
+
+
 @tree_bp.route("/version/save", methods=["POST"])
 def save_version():
     data = request.get_json()
@@ -281,57 +278,46 @@ def save_version():
         name = data["name"]
         service.saveVersion(name)
 
-        return jsonify({
-            "status": "success",
-            "message": f"Version '{name}' saved"
-        }), 200
+        return jsonify({"status": "success", "message": f"Version '{name}' saved"}), 200
 
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 400
+        return jsonify({"status": "error", "message": str(e)}), 400
+
 
 @tree_bp.route("/version/load/<name>", methods=["POST"])
 def load_version(name):
     try:
         if success := service.loadVersion(name):
-            return jsonify({
-                "status": "success",
-                "message": f"Version '{name}' loaded",
-                "data": service.getTreeJson()
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "status": "success",
+                        "message": f"Version '{name}' loaded",
+                        "data": service.getTreeJson(),
+                    }
+                ),
+                200,
+            )
 
         else:
-            return jsonify({
-                "status": "error",
-                "message": "Version not found"
-            }), 404
+            return jsonify({"status": "error", "message": "Version not found"}), 404
 
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 400
-        
+        return jsonify({"status": "error", "message": str(e)}), 400
+
 
 @tree_bp.route("/version", methods=["GET"])
 def get_versions():
     try:
         versions = service.getVersions()
 
-        return jsonify({
-            "status": "success",
-            "data": versions
-        }), 200
+        return jsonify({"status": "success", "data": versions}), 200
 
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 400
+        return jsonify({"status": "error", "message": str(e)}), 400
 
-#CONCURRENCE SIMULATION
+
+# CONCURRENCE SIMULATION
 @tree_bp.route("/queue/enqueue", methods=["POST"])
 def enqueue_flight():
     data = request.get_json()
@@ -346,76 +332,50 @@ def enqueue_flight():
             numberPassengers=data["pasajeros"],
             promotion=data["promocion"],
             alert=data["alerta"],
-            priority=data["prioridad"]
+            priority=data["prioridad"],
         )
 
         service.enqueueFlight(flight)
 
-        return jsonify({
-            "status": "success",
-            "message": "Flight added to queue"
-        }), 200
+        return jsonify({"status": "success", "message": "Flight added to queue"}), 200
 
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 400
-        
+        return jsonify({"status": "error", "message": str(e)}), 400
+
 
 @tree_bp.route("/queue/process", methods=["POST"])
 def process_queue():
     try:
         steps = service.processQueue()
 
-        return jsonify({
-            "status": "success",
-            "steps": steps
-        }), 200
+        return jsonify({"status": "success", "steps": steps}), 200
 
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 400
-        
+        return jsonify({"status": "error", "message": str(e)}), 400
 
-#METRICS OF THE TREE
+
+# METRICS OF THE TREE
 @tree_bp.route("/metrics", methods=["GET"])
 def get_metrics():
     try:
         metrics = service.getMetrics()
 
-        return jsonify({
-            "status": "success",
-            "data": metrics
-        }), 200
+        return jsonify({"status": "success", "data": metrics}), 200
 
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 400
+        return jsonify({"status": "error", "message": str(e)}), 400
 
 
-#STRESS MODE
+# STRESS MODE
 @tree_bp.route("/stress/activate", methods=["POST"])
 def activate_stress():
     try:
         stressService.activateStress()
 
-        return jsonify({
-            "status": "success",
-            "data": {"stressMode": True}
-        }), 200
+        return jsonify({"status": "success", "data": {"stressMode": True}}), 200
 
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 400
-
-
+        return jsonify({"status": "error", "message": str(e)}), 400
 
 
 @tree_bp.route("/stress/desactivate", methods=["POST"])
@@ -423,37 +383,34 @@ def deactivate_stress():
     try:
         result = stressService.desactivateStress()
 
-        return jsonify({
-            "status": "success",
-            "data": {
-                "stressMode": False,
-                "rebalance": result,
-                "tree": service.getTreeJson()
-            }
-        }), 200
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "data": {
+                        "stressMode": False,
+                        "rebalance": result,
+                        "tree": service.getTreeJson(),
+                    },
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 400
+        return jsonify({"status": "error", "message": str(e)}), 400
+
 
 @tree_bp.route("/stress/rebalance", methods=["POST"])
 def rebalance():
     try:
         result = stressService.rebalanceGlobal()
 
-        return jsonify({
-            "status": "success",
-            "data": result
-        }), 200
+        return jsonify({"status": "success", "data": result}), 200
 
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 400
-    
+        return jsonify({"status": "error", "message": str(e)}), 400
+
 
 # PENALTY SERVICE
 @tree_bp.route("/penalty/setDepthLimit", methods=["POST"])
@@ -464,27 +421,30 @@ def set_depth_limit():
     {
         "limit": 2
     }
-    this endpoint call the method setDepthLimit(limit) who calculate the penalty at the same time with applyPenalty(). 
+    this endpoint call the method setDepthLimit(limit) who calculate the penalty at the same time with applyPenalty().
     """
     data = request.get_json()
     try:
         limit = int(data.get("limit", 0))
         service.penaltyService.setDepthLimit(limit)
 
-        return jsonify({
-            "status": "success",
-            "message": f"Depth limit set to {limit}",
-            "depthLimit": limit,
-            "tree": service.getTreeJson()  # ya incluye isCritical en nodeToJson
-        }), 200
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "message": f"Depth limit set to {limit}",
+                    "depthLimit": limit,
+                    "tree": service.getTreeJson(),  # ya incluye isCritical en nodeToJson
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 400
+        return jsonify({"status": "error", "message": str(e)}), 400
 
-#auxiliar endpoint 
+
+# auxiliar endpoint
 @tree_bp.route("/penalty/apply", methods=["POST"])
 def apply_penalty():
     """
@@ -494,19 +454,22 @@ def apply_penalty():
     try:
         service.penaltyService.applyPenalty()
 
-        return jsonify({
-            "status": "success",
-            "message": "Penalty applied according to current depth limit",
-            "tree": service.getTreeJson()
-        }), 200
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "message": "Penalty applied according to current depth limit",
+                    "tree": service.getTreeJson(),
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 400
+        return jsonify({"status": "error", "message": str(e)}), 400
 
-#AUDITORY AVL (VERIFY PROPERTIES)
+
+# AUDITORY AVL (VERIFY PROPERTIES)
 @tree_bp.route("/auditory", methods=["GET"])
 def audit_avl():
     """
@@ -517,21 +480,23 @@ def audit_avl():
     try:
         result = service.getAuditAVL()
 
-        return jsonify({
-            "status": "success",
-            "message": "AVL auditory complete",
-            "report": result["treeReport"],
-            "inconsistentNodes": result["inconsistentNodes"]
-        }), 200
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "message": "AVL auditory complete",
+                    "report": result["treeReport"],
+                    "inconsistentNodes": result["inconsistentNodes"],
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 400 
-    
+        return jsonify({"status": "error", "message": str(e)}), 400
 
-#SMART DELETE
+
+# SMART DELETE
 @tree_bp.route("/profit/deleteLowest", methods=["POST"])
 def delete_lowest_profit():
     """
@@ -544,20 +509,27 @@ def delete_lowest_profit():
         flight_code = service.deleteLowestProfitFlight()
 
         if flight_code is None:
-            return jsonify({
-                "status": "warning",
-                "message": "There are not Flights",
-                "tree": service.getTreeJson()
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "status": "warning",
+                        "message": "There are not Flights",
+                        "tree": service.getTreeJson(),
+                    }
+                ),
+                200,
+            )
 
-        return jsonify({
-            "status": "success",
-            "message": f"Flight cancel: {flight_code}",
-            "tree": service.getTreeJson()
-        }), 200
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "message": f"Flight cancel: {flight_code}",
+                    "tree": service.getTreeJson(),
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 400
+        return jsonify({"status": "error", "message": str(e)}), 400

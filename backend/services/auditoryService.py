@@ -11,10 +11,7 @@ class AuditoryService:
             raise Exception("Auditory only useful with stress mode")
 
         report, inconsistentNodes = self._auditNode(self.treeService.avl.root)
-        return {
-            "treeReport": report,
-            "inconsistentNodes": inconsistentNodes
-        }
+        return {"treeReport": report, "inconsistentNodes": inconsistentNodes}
 
     def _auditNode(self, node):
         """
@@ -22,7 +19,6 @@ class AuditoryService:
         """
         if node is None:
             return None, []
-        
 
         leftReport, leftInconsistent = self._auditNode(node.getLeftChild())
         rightReport, rightInconsistent = self._auditNode(node.getRightChild())
@@ -36,14 +32,14 @@ class AuditoryService:
         isConsistent = abs(balance) <= 1
 
         flight = node.getValue()
-        
+
         nodeReport = {
             "codigo": flight.getIdFlight(),
             "altura": height,
             "factorEquilibrio": balance,
             "esConsistente": isConsistent,
             "izquierdo": leftReport,
-            "derecho": rightReport
+            "derecho": rightReport,
         }
 
         # Lista de inconsistentes

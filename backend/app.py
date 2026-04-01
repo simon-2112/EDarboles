@@ -9,5 +9,6 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 app.register_blueprint(tree_bp, url_prefix="/api/tree")
 
+
 if __name__ == "__main__":
     app.run(debug=True)

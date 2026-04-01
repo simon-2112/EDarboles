@@ -32,6 +32,11 @@ async function getTree() {
   return apiFetch("");
 }
 
+/** trae las ciudades con aeropuertos */
+async function getCiudades() {
+  return apiFetch("/ciudades", "GET");
+}
+
 /** Crea o carga un árbol */
 async function createTree(datos) {
   return apiFetch("/create", "POST", datos);

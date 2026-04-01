@@ -35,6 +35,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   actualizarListaVersiones();
 
+  // cargar las ciudades con aeropuertos
+  cargarCiudades();
   // ── Carga de archivo ──────────────────────────────────────
   document
     .getElementById("btn-load-file")
@@ -60,7 +62,9 @@ document.addEventListener("DOMContentLoaded", () => {
   document
     .getElementById("btn-delete-rental-node")
     .addEventListener("click", manejarEliminarMenorRentabilidad);
-
+  document
+    .getElementById("btn-delete-all")
+    .addEventListener("click", manejarEliminarTodo);
   // ── Deshacer / exportar ───────────────────────────────────
   document
     .getElementById("btn-undo")
@@ -97,10 +101,14 @@ document.addEventListener("DOMContentLoaded", () => {
     .addEventListener("click", () => visualizador.resetView());
 
   // ── Buscar vuelos ──────────────────────────────────────────────────
-  document.getElementById("btn-search-flight")
+  document
+    .getElementById("btn-search-flight")
     .addEventListener("click", manejarBusquedaVuelo);
-  document.getElementById("input-search-codigo")
-      .addEventListener("keydown", (e) => { if (e.key === "Enter") manejarBusquedaVuelo(); });
+  document
+    .getElementById("input-search-codigo")
+    .addEventListener("keydown", (e) => {
+      if (e.key === "Enter") manejarBusquedaVuelo();
+    });
 
   // ── Recorridos ────────────────────────────────────────────
   ["inorder", "preorder", "postorder", "bfs"].forEach((tipo) =>
@@ -532,6 +540,25 @@ async function manejarEliminarMenorRentabilidad() {
   }
 }
 
+/**
+ * Elimina todo el árbol.
+ */
+async function manejarEliminarTodo() {
+  if (!confirm("¿Eliminar todo el árbol?")) return;
+
+  const btn = document.getElementById("btn-delete-all");
+  setLoading(btn, true, "Eliminando…");
+  try {
+    const respuesta = await resetTree();
+    arbolActual = respuesta.tree;
+    await actualizarInterfaz();
+    mostrarToast(respuesta.message, "success");
+  } catch (err) {
+    mostrarToast(`Error: ${err.message}`, "error");
+  } finally {
+    setLoading(btn, false, "Eliminar Todo El Árbol");
+  }
+}
 // ════════════════════════════════════════════════════════════
 // DESHACER / EXPORTAR
 // ════════════════════════════════════════════════════════════
@@ -608,7 +635,7 @@ async function manejarModoEstres(e) {
       btnSaveVersion.disabled = false;
       indicador.textContent = "Modo Normal";
       indicador.classList.remove("stress-mode");
-      console.log(respuesta)
+      console.log(respuesta);
       await actualizarInterfaz();
       mostrarToast(
         "Modo estrés desactivado. Árbol rebalanceado automáticamente.",
@@ -628,8 +655,15 @@ async function manejarRebalanceo() {
   try {
     const respuesta = await rebalanceStress();
     const { nodes, rotations } = respuesta.data;
-    const totalRot = (rotations.LL||0) + (rotations.RR||0) + (rotations.LR||0) + (rotations.RL||0);
-    mostrarToast(`Rebalanceo completado. Nodos: ${nodes} | Rotaciones: ${totalRot}`, "success");
+    const totalRot =
+      (rotations.LL || 0) +
+      (rotations.RR || 0) +
+      (rotations.LR || 0) +
+      (rotations.RL || 0);
+    mostrarToast(
+      `Rebalanceo completado. Nodos: ${nodes} | Rotaciones: ${totalRot}`,
+      "success",
+    );
     await cargarArbol();
   } catch (err) {
     mostrarToast(`Error: ${err.message}`, "error");
@@ -745,44 +779,48 @@ async function manejarRecorrido(tipo) {
 // ════════════════════════════════════════════════════════════
 
 async function manejarBusquedaVuelo() {
-    const codigo = document.getElementById("input-search-codigo").value.trim();
-    if (!codigo) {
-        mostrarToast("Ingresa un código de vuelo.", "warning");
-        return;
-    }
+  const codigo = document.getElementById("input-search-codigo").value.trim();
+  if (!codigo) {
+    mostrarToast("Ingresa un código de vuelo.", "warning");
+    return;
+  }
 
-    const resultado = document.getElementById("flight-info-result");
-    const notFound = document.getElementById("flight-info-notfound");
-    resultado.classList.add("hidden");
-    notFound.classList.add("hidden");
+  const resultado = document.getElementById("flight-info-result");
+  const notFound = document.getElementById("flight-info-notfound");
+  resultado.classList.add("hidden");
+  notFound.classList.add("hidden");
 
-    try {
-        const respuesta = await searchFlight(codigo);
-        const f = respuesta.data;
+  try {
+    const respuesta = await searchFlight(codigo);
+    const f = respuesta.data;
 
-        document.getElementById("fi-codigo").textContent = f.codigo;
-        document.getElementById("fi-origen").textContent = f.origen;
-        document.getElementById("fi-destino").textContent = f.destino;
-        document.getElementById("fi-hora").textContent = f.horaSalida;
-        document.getElementById("fi-pasajeros").textContent = f.pasajeros;
-        document.getElementById("fi-precio-base").textContent = `$${f.precioBase.toFixed(2)}`;
-        document.getElementById("fi-precio-final").textContent = `$${f.precioFinal.toFixed(2)}`;
-        document.getElementById("fi-prioridad").textContent = f.prioridad;
-        document.getElementById("fi-altura").textContent = f.altura;
-        document.getElementById("fi-bf").textContent = f.factorEquilibrio;
-        document.getElementById("fi-critico").textContent = f.esCritico ? "Sí ⚠" : "No";
+    document.getElementById("fi-codigo").textContent = f.codigo;
+    document.getElementById("fi-origen").textContent = f.origen;
+    document.getElementById("fi-destino").textContent = f.destino;
+    document.getElementById("fi-hora").textContent = f.horaSalida;
+    document.getElementById("fi-pasajeros").textContent = f.pasajeros;
+    document.getElementById("fi-precio-base").textContent =
+      `$${f.precioBase.toFixed(2)}`;
+    document.getElementById("fi-precio-final").textContent =
+      `$${f.precioFinal.toFixed(2)}`;
+    document.getElementById("fi-prioridad").textContent = f.prioridad;
+    document.getElementById("fi-altura").textContent = f.altura;
+    document.getElementById("fi-bf").textContent = f.factorEquilibrio;
+    document.getElementById("fi-critico").textContent = f.esCritico
+      ? "Sí ⚠"
+      : "No";
 
-        // Badges de estado
-        let badges = "";
-        if (f.promocion) badges += `<span class="fi-badge promo">PROMO</span>`;
-        if (f.alerta)    badges += `<span class="fi-badge alerta">ALERTA</span>`;
-        if (f.esCritico) badges += `<span class="fi-badge critico">CRÍTICO</span>`;
-        document.getElementById("fi-badges").innerHTML = badges;
+    // Badges de estado
+    let badges = "";
+    if (f.promocion) badges += `<span class="fi-badge promo">PROMO</span>`;
+    if (f.alerta) badges += `<span class="fi-badge alerta">ALERTA</span>`;
+    if (f.esCritico) badges += `<span class="fi-badge critico">CRÍTICO</span>`;
+    document.getElementById("fi-badges").innerHTML = badges;
 
-        resultado.classList.remove("hidden");
-    } catch {
-        notFound.classList.remove("hidden");
-    }
+    resultado.classList.remove("hidden");
+  } catch {
+    notFound.classList.remove("hidden");
+  }
 }
 
 // ════════════════════════════════════════════════════════════
@@ -1014,19 +1052,27 @@ async function manejarEnqueueVuelo() {
   const vuelo = obtenerDatosVueloDelFormulario();
 
   // Validaciones básicas
-  if (!vuelo.codigo) {
-    mostrarToast("Debes ingresar un código para el vuelo.", "warning");
+  if (
+    !vuelo.codigo ||
+    !vuelo.origen ||
+    !vuelo.destino ||
+    !vuelo.pasajeros ||
+    !vuelo.precioBase
+  ) {
+    mostrarToast("Completa todos los campos obligatorios", "warning");
     return;
   }
-  if (!vuelo.origen || !vuelo.destino) {
-    mostrarToast("Debes ingresar origen y destino.", "warning");
+  if (vuelo.origen === vuelo.destino) {
+    mostrarToast(
+      "El origen y el destino no pueden ser la misma ciudad.",
+      "warning",
+    );
     return;
   }
   if (!vuelo.horaSalida) {
     mostrarToast("Debes ingresar la hora de salida.", "warning");
     return;
   }
-
   try {
     // Enviar al backend para agregarlo a la cola
     await enqueueFlight(vuelo);
@@ -1230,4 +1276,46 @@ async function visualizarPasosConcurrencia(steps) {
     conflictos > 0 ? "warning" : "success",
     5000,
   );
+}
+
+/**
+ * carga las ciudades con aeropuertos y puebla los selectores
+ */
+async function cargarCiudades() {
+  try {
+    const respuesta = await getCiudades();
+    const ciudades = respuesta.data.ciudades_con_aeropuerto_colombia;
+    poblarSelectCiudades(ciudades);
+  } catch (error) {
+    console.error("Error al obtener las ciudades:", error);
+  }
+}
+
+/**
+ * Puebla los selectores de origen y destino con las ciudades disponibles
+ */
+function poblarSelectCiudades(ciudades) {
+  const selectOrigen = document.getElementById("input-origen");
+  const selectDestino = document.getElementById("input-destino");
+
+  if (!selectOrigen || !selectDestino) return;
+
+  // Limpiar opciones existentes (mantener la opción disabled select)
+  selectOrigen.innerHTML =
+    '<option value="" disabled selected>Selecciona Origen</option>';
+  selectDestino.innerHTML =
+    '<option value="" disabled selected>Selecciona Destino</option>';
+
+  // Añadir las ciudades como opciones
+  ciudades.forEach((ciudad) => {
+    const optionOrigen = document.createElement("option");
+    optionOrigen.value = ciudad;
+    optionOrigen.textContent = ciudad;
+    selectOrigen.appendChild(optionOrigen);
+
+    const optionDestino = document.createElement("option");
+    optionDestino.value = ciudad;
+    optionDestino.textContent = ciudad;
+    selectDestino.appendChild(optionDestino);
+  });
 }
