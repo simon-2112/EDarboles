@@ -125,6 +125,7 @@ class TreeService:
         self.avl.insert(node, rebalance=not self.stressMode)
 
         self.penaltyService.applyPenalty()
+        return True
 
     def searchFlight(self, flightCode):
         if not flightCode:
