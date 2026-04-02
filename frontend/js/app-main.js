@@ -23,6 +23,9 @@ let colaVuelos = []; // Array de vuelos pendientes por procesar
 let procesandoCola = false; // Flag para indicar si está procesando
 let detenerProceso = false; // Flag para cancelar el procesamiento
 
+// ── Edición de Vuelos ────────────────────────────────────────
+let vueloEnEdicion = null; // Almacena el vuelo en modo edición
+
 // ════════════════════════════════════════════════════════════
 // INICIALIZACIÓN
 // ════════════════════════════════════════════════════════════
@@ -35,6 +38,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   actualizarListaVersiones();
 
+  // cargar las ciudades con aeropuertos
+  cargarCiudades();
   // ── Carga de archivo ──────────────────────────────────────
   document
     .getElementById("btn-load-file")
@@ -50,6 +55,14 @@ document.addEventListener("DOMContentLoaded", () => {
     .getElementById("form-insert")
     .addEventListener("submit", manejarInsercion);
 
+  // ── Editar vuelo ────────────────────────────────────────
+  document
+    .getElementById("btn-load-flight")
+    .addEventListener("click", manejarCargarVuelo);
+  document
+    .getElementById("btn-cancel-edit")
+    .addEventListener("click", () => cancelarEdicion(true));
+
   // ── Eliminar / cancelar ───────────────────────────────────
   document
     .getElementById("btn-delete")
@@ -60,7 +73,9 @@ document.addEventListener("DOMContentLoaded", () => {
   document
     .getElementById("btn-delete-rental-node")
     .addEventListener("click", manejarEliminarMenorRentabilidad);
-
+  document
+    .getElementById("btn-delete-all")
+    .addEventListener("click", manejarEliminarTodo);
   // ── Deshacer / exportar ───────────────────────────────────
   document
     .getElementById("btn-undo")
@@ -97,10 +112,14 @@ document.addEventListener("DOMContentLoaded", () => {
     .addEventListener("click", () => visualizador.resetView());
 
   // ── Buscar vuelos ──────────────────────────────────────────────────
-  document.getElementById("btn-search-flight")
+  document
+    .getElementById("btn-search-flight")
     .addEventListener("click", manejarBusquedaVuelo);
-  document.getElementById("input-search-codigo")
-      .addEventListener("keydown", (e) => { if (e.key === "Enter") manejarBusquedaVuelo(); });
+  document
+    .getElementById("input-search-codigo")
+    .addEventListener("keydown", (e) => {
+      if (e.key === "Enter") manejarBusquedaVuelo();
+    });
 
   // ── Recorridos ────────────────────────────────────────────
   ["inorder", "preorder", "postorder", "bfs"].forEach((tipo) =>
@@ -133,9 +152,15 @@ document.addEventListener("DOMContentLoaded", () => {
     .getElementById("btn-stop-processing")
     .addEventListener("click", manejarDetenerProcesamiento);
 
-  // ESC limpia el formulario de inserción
+  // ESC cancela edición o limpia el formulario
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") limpiarFormulario();
+    if (e.key === "Escape") {
+      if (vueloEnEdicion) {
+        cancelarEdicion(true);
+      } else {
+        limpiarFormulario();
+      }
+    }
   });
 });
 
@@ -399,7 +424,7 @@ function mostrarModalComparacion(arbolAVL, vuelos) {
 async function manejarInsercion(e) {
   e.preventDefault();
   const btn = e.target.querySelector("button[type=submit]");
-  setLoading(btn, true, "Insertando…");
+  setLoading(btn, true, vueloEnEdicion ? "Guardando..." : "Insertando…");
   try {
     const datos = {
       codigo: document.getElementById("input-codigo").value.trim(),
@@ -407,7 +432,9 @@ async function manejarInsercion(e) {
       destino: document.getElementById("input-destino").value.trim(),
       horaSalida: document.getElementById("input-hora").value,
       precioBase: parseFloat(document.getElementById("input-precio").value),
-      pasajeros: parseInt(document.getElementById("input-pasajeros").value),
+      pasajeros: vueloEnEdicion
+        ? vueloEnEdicion.pasajerosFinal
+        : parseInt(document.getElementById("input-pasajeros").value),
       promocion: document.getElementById("input-promocion").checked,
       alerta: document.getElementById("input-alerta").checked,
       prioridad: parseInt(document.getElementById("input-prioridad").value),
@@ -428,20 +455,196 @@ async function manejarInsercion(e) {
       return;
     }
 
-    const respuesta = await insertFlight(datos);
-    arbolActual = respuesta.data;
-    await actualizarInterfaz();
-    limpiarFormulario();
-    mostrarToast(`Vuelo ${datos.codigo} insertado correctamente.`, "success");
+    let respuesta;
+
+    if (vueloEnEdicion) {
+      // MODO EDICIÓN
+      respuesta = await updateFlight(datos.codigo, datos);
+      arbolActual = respuesta.data;
+      await actualizarInterfaz();
+      cancelarEdicion();
+      mostrarToast(
+        `Vuelo ${datos.codigo} actualizado correctamente.`,
+        "success",
+      );
+    } else {
+      // MODO INSERCIÓN
+      respuesta = await insertFlight(datos);
+      arbolActual = respuesta.data;
+      await actualizarInterfaz();
+      limpiarFormulario();
+      mostrarToast(`Vuelo ${datos.codigo} insertado correctamente.`, "success");
+    }
   } catch (err) {
-    mostrarToast(`Error al insertar: ${err.message}`, "error");
+    mostrarToast(`Error: ${err.message}`, "error");
   } finally {
-    setLoading(btn, false, "Insertar");
+    setLoading(btn, false, vueloEnEdicion ? "Guardar Cambios" : "Insertar");
   }
 }
 
 function limpiarFormulario() {
   document.getElementById("form-insert").reset();
+  if (vueloEnEdicion) {
+    cancelarEdicion();
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// EDITAR VUELO
+// ════════════════════════════════════════════════════════════
+
+async function manejarCargarVuelo() {
+  const codigo = document.getElementById("input-edit-codigo").value.trim();
+
+  if (!codigo) {
+    mostrarToast("Ingresa el código del vuelo a editar.", "warning");
+    return;
+  }
+
+  try {
+    const respuesta = await searchFlight(codigo);
+    const vuelo = respuesta.data;
+
+    // Guardar referencia al vuelo en edición
+    vueloEnEdicion = vuelo;
+
+    // Cargar datos en el formulario
+    document.getElementById("input-codigo").value = vuelo.codigo;
+    document.getElementById("input-origen").value = vuelo.origen;
+    document.getElementById("input-destino").value = vuelo.destino;
+    document.getElementById("input-hora").value = vuelo.horaSalida;
+    document.getElementById("input-precio").value = vuelo.precioBase;
+    document.getElementById("input-prioridad").value = vuelo.prioridad;
+    document.getElementById("input-promocion").checked = vuelo.promocion;
+    document.getElementById("input-alerta").checked = vuelo.alerta;
+
+    // NUEVO: Guardar pasajeros originales y mostrar interfaz mejorada
+    vueloEnEdicion.pasajerosOriginales = vuelo.pasajeros;
+    mostrarInterfazPasajeros(vuelo.pasajeros);
+
+    // Deshabilitar campos que no pueden cambiar
+    document.getElementById("input-codigo").disabled = true;
+    document.getElementById("input-origen").disabled = true;
+    document.getElementById("input-destino").disabled = true;
+
+    // Habilitar solo campos editables
+    document.getElementById("input-hora").disabled = false;
+    document.getElementById("input-precio").disabled = false;
+    document.getElementById("input-prioridad").disabled = false;
+    document.getElementById("input-promocion").disabled = false;
+    document.getElementById("input-alerta").disabled = false;
+
+    // Cambiar botón de formulario
+    const btnSubmit = document
+      .getElementById("form-insert")
+      .querySelector("button[type=submit]");
+    btnSubmit.textContent = "Guardar Cambios";
+    btnSubmit.dataset.textoOriginal = "Guardar Cambios";
+    btnSubmit.classList.remove("btn-success");
+    btnSubmit.classList.add("btn-primary");
+
+    // Mostrar indicador de edición
+    document.getElementById("edit-mode-indicator").style.display = "block";
+    document.getElementById("btn-cancel-edit").style.display = "block";
+    document.getElementById("input-edit-codigo").disabled = true;
+    document.getElementById("btn-load-flight").disabled = true;
+
+    mostrarToast(`Vuelo ${codigo} cargado en modo edición.`, "info");
+  } catch (err) {
+    mostrarToast(`Error: ${err.message}`, "error");
+  }
+}
+
+function mostrarInterfazPasajeros(pasajerosActuales) {
+  const container = document.getElementById("pasajeros-container");
+
+  container.innerHTML = `
+    <div style="background: #f0f4ff; padding: 0.8rem; border-radius: 4px; border-left: 3px solid #3b82f6;">
+      <p style="margin: 0 0 0.5rem 0; font-size: 0.9rem; color: #666;"><strong>Pasajeros Actuales:</strong> ${pasajerosActuales}</p>
+      
+      <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+        <label style="flex: 1;">
+          <input type="radio" name="operacion-pasajeros" value="agregar" checked style="margin-right: 0.3rem;">
+          Agregar
+        </label>
+        <label style="flex: 1;">
+          <input type="radio" name="operacion-pasajeros" value="eliminar" style="margin-right: 0.3rem;">
+          Eliminar
+        </label>
+      </div>
+      
+      <input type="number" id="input-pasajeros-cambio" placeholder="Cantidad a agregar/eliminar" min="0" value="0" style="width: 100%; padding: 0.6rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;">
+      
+      <p id="pasajeros-preview" style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #0066cc;">
+        Total será: <strong>${pasajerosActuales}</strong> pasajeros
+      </p>
+    </div>
+  `;
+
+  // Event listeners para actualizar el preview
+  const radios = container.querySelectorAll(
+    'input[name="operacion-pasajeros"]',
+  );
+  const inputCambio = document.getElementById("input-pasajeros-cambio");
+
+  const actualizarPreview = () => {
+    const operacion = container.querySelector(
+      'input[name="operacion-pasajeros"]:checked',
+    ).value;
+    const cantidad = parseInt(inputCambio.value) || 0;
+
+    let total;
+    if (operacion === "agregar") {
+      total = pasajerosActuales + cantidad;
+    } else {
+      total = Math.max(0, pasajerosActuales - cantidad);
+    }
+
+    document.getElementById("pasajeros-preview").innerHTML =
+      `Total será: <strong>${total}</strong> pasajeros`;
+
+    // Guardar el total calculado
+    vueloEnEdicion.pasajerosFinal = total;
+  };
+
+  radios.forEach((radio) =>
+    radio.addEventListener("change", actualizarPreview),
+  );
+  inputCambio.addEventListener("input", actualizarPreview);
+}
+
+function cancelarEdicion(esExplicito = false) {
+  vueloEnEdicion = null;
+
+  // Restaurar campo de pasajeros normal
+  const container = document.getElementById("pasajeros-container");
+  container.innerHTML = `<input type="number" id="input-pasajeros" placeholder="Pasajeros" min="0" required>`;
+
+  // Re-habilitar campos
+  document.getElementById("input-codigo").disabled = false;
+  document.getElementById("input-origen").disabled = false;
+  document.getElementById("input-destino").disabled = false;
+
+  // Restaurar botón
+  const btnSubmit = document
+    .getElementById("form-insert")
+    .querySelector("button[type=submit]");
+  btnSubmit.textContent = "Insertar";
+  btnSubmit.dataset.textoOriginal = "Insertar";
+  btnSubmit.classList.add("btn-success");
+  btnSubmit.classList.remove("btn-primary");
+
+  // Ocultar indicador
+  document.getElementById("edit-mode-indicator").style.display = "none";
+  document.getElementById("btn-cancel-edit").style.display = "none";
+  document.getElementById("input-edit-codigo").disabled = false;
+  document.getElementById("btn-load-flight").disabled = false;
+  document.getElementById("input-edit-codigo").value = "";
+
+  limpiarFormulario();
+  if (esExplicito) {
+    mostrarToast("Edición cancelada.", "info");
+  }
 }
 
 // ════════════════════════════════════════════════════════════
@@ -532,6 +735,25 @@ async function manejarEliminarMenorRentabilidad() {
   }
 }
 
+/**
+ * Elimina todo el árbol.
+ */
+async function manejarEliminarTodo() {
+  if (!confirm("¿Eliminar todo el árbol?")) return;
+
+  const btn = document.getElementById("btn-delete-all");
+  setLoading(btn, true, "Eliminando…");
+  try {
+    const respuesta = await resetTree();
+    arbolActual = respuesta.tree;
+    await actualizarInterfaz();
+    mostrarToast(respuesta.message, "success");
+  } catch (err) {
+    mostrarToast(`Error: ${err.message}`, "error");
+  } finally {
+    setLoading(btn, false, "Eliminar Todo El Árbol");
+  }
+}
 // ════════════════════════════════════════════════════════════
 // DESHACER / EXPORTAR
 // ════════════════════════════════════════════════════════════
@@ -608,7 +830,7 @@ async function manejarModoEstres(e) {
       btnSaveVersion.disabled = false;
       indicador.textContent = "Modo Normal";
       indicador.classList.remove("stress-mode");
-      console.log(respuesta)
+      console.log(respuesta);
       await actualizarInterfaz();
       mostrarToast(
         "Modo estrés desactivado. Árbol rebalanceado automáticamente.",
@@ -628,8 +850,15 @@ async function manejarRebalanceo() {
   try {
     const respuesta = await rebalanceStress();
     const { nodes, rotations } = respuesta.data;
-    const totalRot = (rotations.LL||0) + (rotations.RR||0) + (rotations.LR||0) + (rotations.RL||0);
-    mostrarToast(`Rebalanceo completado. Nodos: ${nodes} | Rotaciones: ${totalRot}`, "success");
+    const totalRot =
+      (rotations.LL || 0) +
+      (rotations.RR || 0) +
+      (rotations.LR || 0) +
+      (rotations.RL || 0);
+    mostrarToast(
+      `Rebalanceo completado. Nodos: ${nodes} | Rotaciones: ${totalRot}`,
+      "success",
+    );
     await cargarArbol();
   } catch (err) {
     mostrarToast(`Error: ${err.message}`, "error");
@@ -745,44 +974,48 @@ async function manejarRecorrido(tipo) {
 // ════════════════════════════════════════════════════════════
 
 async function manejarBusquedaVuelo() {
-    const codigo = document.getElementById("input-search-codigo").value.trim();
-    if (!codigo) {
-        mostrarToast("Ingresa un código de vuelo.", "warning");
-        return;
-    }
+  const codigo = document.getElementById("input-search-codigo").value.trim();
+  if (!codigo) {
+    mostrarToast("Ingresa un código de vuelo.", "warning");
+    return;
+  }
 
-    const resultado = document.getElementById("flight-info-result");
-    const notFound = document.getElementById("flight-info-notfound");
-    resultado.classList.add("hidden");
-    notFound.classList.add("hidden");
+  const resultado = document.getElementById("flight-info-result");
+  const notFound = document.getElementById("flight-info-notfound");
+  resultado.classList.add("hidden");
+  notFound.classList.add("hidden");
 
-    try {
-        const respuesta = await searchFlight(codigo);
-        const f = respuesta.data;
+  try {
+    const respuesta = await searchFlight(codigo);
+    const f = respuesta.data;
 
-        document.getElementById("fi-codigo").textContent = f.codigo;
-        document.getElementById("fi-origen").textContent = f.origen;
-        document.getElementById("fi-destino").textContent = f.destino;
-        document.getElementById("fi-hora").textContent = f.horaSalida;
-        document.getElementById("fi-pasajeros").textContent = f.pasajeros;
-        document.getElementById("fi-precio-base").textContent = `$${f.precioBase.toFixed(2)}`;
-        document.getElementById("fi-precio-final").textContent = `$${f.precioFinal.toFixed(2)}`;
-        document.getElementById("fi-prioridad").textContent = f.prioridad;
-        document.getElementById("fi-altura").textContent = f.altura;
-        document.getElementById("fi-bf").textContent = f.factorEquilibrio;
-        document.getElementById("fi-critico").textContent = f.esCritico ? "Sí ⚠" : "No";
+    document.getElementById("fi-codigo").textContent = f.codigo;
+    document.getElementById("fi-origen").textContent = f.origen;
+    document.getElementById("fi-destino").textContent = f.destino;
+    document.getElementById("fi-hora").textContent = f.horaSalida;
+    document.getElementById("fi-pasajeros").textContent = f.pasajeros;
+    document.getElementById("fi-precio-base").textContent =
+      `$${f.precioBase.toFixed(2)}`;
+    document.getElementById("fi-precio-final").textContent =
+      `$${f.precioFinal.toFixed(2)}`;
+    document.getElementById("fi-prioridad").textContent = f.prioridad;
+    document.getElementById("fi-altura").textContent = f.altura;
+    document.getElementById("fi-bf").textContent = f.factorEquilibrio;
+    document.getElementById("fi-critico").textContent = f.esCritico
+      ? "Sí ⚠"
+      : "No";
 
-        // Badges de estado
-        let badges = "";
-        if (f.promocion) badges += `<span class="fi-badge promo">PROMO</span>`;
-        if (f.alerta)    badges += `<span class="fi-badge alerta">ALERTA</span>`;
-        if (f.esCritico) badges += `<span class="fi-badge critico">CRÍTICO</span>`;
-        document.getElementById("fi-badges").innerHTML = badges;
+    // Badges de estado
+    let badges = "";
+    if (f.promocion) badges += `<span class="fi-badge promo">PROMO</span>`;
+    if (f.alerta) badges += `<span class="fi-badge alerta">ALERTA</span>`;
+    if (f.esCritico) badges += `<span class="fi-badge critico">CRÍTICO</span>`;
+    document.getElementById("fi-badges").innerHTML = badges;
 
-        resultado.classList.remove("hidden");
-    } catch {
-        notFound.classList.remove("hidden");
-    }
+    resultado.classList.remove("hidden");
+  } catch {
+    notFound.classList.remove("hidden");
+  }
 }
 
 // ════════════════════════════════════════════════════════════
@@ -1014,19 +1247,27 @@ async function manejarEnqueueVuelo() {
   const vuelo = obtenerDatosVueloDelFormulario();
 
   // Validaciones básicas
-  if (!vuelo.codigo) {
-    mostrarToast("Debes ingresar un código para el vuelo.", "warning");
+  if (
+    !vuelo.codigo ||
+    !vuelo.origen ||
+    !vuelo.destino ||
+    !vuelo.pasajeros ||
+    !vuelo.precioBase
+  ) {
+    mostrarToast("Completa todos los campos obligatorios", "warning");
     return;
   }
-  if (!vuelo.origen || !vuelo.destino) {
-    mostrarToast("Debes ingresar origen y destino.", "warning");
+  if (vuelo.origen === vuelo.destino) {
+    mostrarToast(
+      "El origen y el destino no pueden ser la misma ciudad.",
+      "warning",
+    );
     return;
   }
   if (!vuelo.horaSalida) {
     mostrarToast("Debes ingresar la hora de salida.", "warning");
     return;
   }
-
   try {
     // Enviar al backend para agregarlo a la cola
     await enqueueFlight(vuelo);
@@ -1230,4 +1471,46 @@ async function visualizarPasosConcurrencia(steps) {
     conflictos > 0 ? "warning" : "success",
     5000,
   );
+}
+
+/**
+ * carga las ciudades con aeropuertos y puebla los selectores
+ */
+async function cargarCiudades() {
+  try {
+    const respuesta = await getCiudades();
+    const ciudades = respuesta.data.ciudades_con_aeropuerto_colombia;
+    poblarSelectCiudades(ciudades);
+  } catch (error) {
+    console.error("Error al obtener las ciudades:", error);
+  }
+}
+
+/**
+ * Puebla los selectores de origen y destino con las ciudades disponibles
+ */
+function poblarSelectCiudades(ciudades) {
+  const selectOrigen = document.getElementById("input-origen");
+  const selectDestino = document.getElementById("input-destino");
+
+  if (!selectOrigen || !selectDestino) return;
+
+  // Limpiar opciones existentes (mantener la opción disabled select)
+  selectOrigen.innerHTML =
+    '<option value="" disabled selected>Selecciona Origen</option>';
+  selectDestino.innerHTML =
+    '<option value="" disabled selected>Selecciona Destino</option>';
+
+  // Añadir las ciudades como opciones
+  ciudades.forEach((ciudad) => {
+    const optionOrigen = document.createElement("option");
+    optionOrigen.value = ciudad;
+    optionOrigen.textContent = ciudad;
+    selectOrigen.appendChild(optionOrigen);
+
+    const optionDestino = document.createElement("option");
+    optionDestino.value = ciudad;
+    optionDestino.textContent = ciudad;
+    selectDestino.appendChild(optionDestino);
+  });
 }

@@ -1,14 +1,15 @@
-#we can get there for example methods to read and write JSON files, or create methods for iterative patterns.
+# we can get there for example methods to read and write JSON files, or create methods for iterative patterns.
 
 from pathlib import Path
 import json
 
 jsonRouteIntern = Path(__file__).resolve().parent.parent / "data" / "tree.json"
 
+
 def readJson(route):
     with open(route, "r", encoding="utf-8") as archive:
         return json.load(archive)
-    
+
 
 def writeJson(jsonData, route):
     print(f"jsonData: {jsonData}")
@@ -16,8 +17,9 @@ def writeJson(jsonData, route):
         archive.write(jsonData)
         print(f"Content written to {route}")
 
+
 def addContentToJson(newContent, route):
-    if(newContent == "" or newContent is None):
+    if newContent == "" or newContent is None:
         return
     print(f"newContent: {newContent}")
     with open(route, "a") as archive:

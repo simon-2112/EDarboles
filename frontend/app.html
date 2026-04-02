@@ -43,15 +43,36 @@
                 </div>
             </div>
 
+            <!-- Panel de Edición -->
+            <div class="panel-section">
+                <h3 class="panel-title">Editar Vuelo</h3>
+                <div class="form-controls">
+                    <input type="text" id="input-edit-codigo" placeholder="Código del vuelo a editar">
+                    <button type="button" class="btn btn-success btn-block" id="btn-load-flight">Cargar Vuelo</button>
+                    <button type="button" class="btn btn-secondary btn-block" id="btn-cancel-edit"
+                        style="display:none;">Cancelar Edición</button>
+                </div>
+                <div id="edit-mode-indicator"
+                    style="display:none; padding: 0.6rem; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px; margin-top: 0.5rem; font-size: 0.9rem; color: #856404;">
+                    ✎ Modo Edición: Modifica solo los campos habilitados
+                </div>
+            </div>
+
             <div class="panel-section">
                 <h3 class="panel-title">Insertar Vuelo</h3>
                 <form id="form-insert" class="form-controls">
                     <input type="text" id="input-codigo" placeholder="Código (ej: SB400)" required>
-                    <input type="text" id="input-origen" placeholder="Origen" required>
-                    <input type="text" id="input-destino" placeholder="Destino" required>
+                    <select id="input-origen" required>
+                        <option value="" disabled selected>Selecciona Origen</option>
+                    </select>
+                    <select id="input-destino" required>
+                        <option value="" disabled selected>Selecciona Destino</option>
+                    </select>
                     <input type="time" id="input-hora" placeholder="Hora Salida" value="10:00" required>
                     <input type="number" id="input-precio" placeholder="Precio Base" min="0" required>
-                    <input type="number" id="input-pasajeros" placeholder="Pasajeros" min="0" required>
+                    <div id="pasajeros-container">
+                        <input type="number" id="input-pasajeros" placeholder="Pasajeros" min="0" required>
+                    </div>
                     <input type="number" id="input-prioridad" placeholder="Prioridad (1-3)" min="1" max="3" required>
 
                     <div class="checkbox-group">
@@ -125,6 +146,7 @@
                     <button class="btn btn-danger btn-block" id="btn-cancel">Cancelar Vuelo + Descendientes</button>
                     <button class="btn btn-purple btn-block" id="btn-delete-rental-node">Eliminar Nodo Menor
                         Rentabilidad</button>
+                    <button class="btn btn-secondary btn-block" id="btn-delete-all">Eliminar Todo El Árbol</button>
                 </div>
             </div>
 
@@ -236,25 +258,26 @@
                         </div>
                     </div>
                 </div>
-                <div id="flight-info-notfound" class="hidden" style="margin-top:0.8rem;padding:0.6rem;background:#fff1f2;border-left:4px solid #ef4444;border-radius:6px;font-size:0.85rem;color:#ef4444;">
+                <div id="flight-info-notfound" class="hidden"
+                    style="margin-top:0.8rem;padding:0.6rem;background:#fff1f2;border-left:4px solid #ef4444;border-radius:6px;font-size:0.85rem;color:#ef4444;">
                     Vuelo no encontrado.
                 </div>
             </div>
-                <h3 class="panel-title">Métricas del Árbol</h3>
-                <div class="metrics-grid">
-                    <div class="metric-item">
-                        <span class="metric-label">Altura:</span>
-                        <span class="metric-value" id="metric-altura">-</span>
-                    </div>
-                    <div class="metric-item">
-                        <span class="metric-label">Nodos:</span>
-                        <span class="metric-value" id="metric-nodos">0</span>
-                    </div>
-                    <div class="metric-item">
-                        <span class="metric-label">Hojas:</span>
-                        <span class="metric-value" id="metric-hojas">0</span>
-                    </div>
+            <h3 class="panel-title">Métricas del Árbol</h3>
+            <div class="metrics-grid">
+                <div class="metric-item">
+                    <span class="metric-label">Altura:</span>
+                    <span class="metric-value" id="metric-altura">-</span>
                 </div>
+                <div class="metric-item">
+                    <span class="metric-label">Nodos:</span>
+                    <span class="metric-value" id="metric-nodos">0</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">Hojas:</span>
+                    <span class="metric-value" id="metric-hojas">0</span>
+                </div>
+            </div>
             </div>
 
             <div class="panel-section">

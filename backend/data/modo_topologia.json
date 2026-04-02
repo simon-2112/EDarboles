@@ -1,7 +1,7 @@
 {
   "tipo": "TOPOLOGIA",
   "codigo": 500,
-  "origen": "Medellin",
+  "origen": "Medellín",
   "destino": "Cartagena",
   "horaSalida": "10:00",
   "precioBase": 400,
@@ -13,7 +13,7 @@
   "factorEquilibrio": 0,
   "izquierdo": {
     "codigo": 300,
-    "origen": "Bogota",
+    "origen": "Bogotá",
     "destino": "Cali",
     "horaSalida": "08:00",
     "precioBase": 350,
@@ -25,7 +25,7 @@
     "factorEquilibrio": 0,
     "izquierdo": {
       "codigo": 200,
-      "origen": "Bogota",
+      "origen": "Bogotá",
       "destino": "Pereira",
       "horaSalida": "07:00",
       "precioBase": 280,
@@ -37,8 +37,8 @@
       "factorEquilibrio": 0,
       "izquierdo": {
         "codigo": 150,
-        "origen": "Cucuta",
-        "destino": "Bogota",
+        "origen": "Cúcuta",
+        "destino": "Bogotá",
         "horaSalida": "06:00",
         "precioBase": 260,
         "precioFinal": 260,
@@ -49,8 +49,8 @@
         "factorEquilibrio": 0,
         "izquierdo": {
           "codigo": 120,
-          "origen": "Monteria",
-          "destino": "Bogota",
+          "origen": "Montería",
+          "destino": "Bogotá",
           "horaSalida": "05:30",
           "precioBase": 240,
           "precioFinal": 240,
@@ -69,7 +69,7 @@
       "derecho": {
         "codigo": 250,
         "origen": "Manizales",
-        "destino": "Bogota",
+        "destino": "Bogotá",
         "horaSalida": "07:30",
         "precioBase": 290,
         "precioFinal": 290,
@@ -81,8 +81,8 @@
         "izquierdo": null,
         "derecho": {
           "codigo": 275,
-          "origen": "Ibague",
-          "destino": "Medellin",
+          "origen": "Ibagué",
+          "destino": "Medellín",
           "horaSalida": "07:50",
           "precioBase": 300,
           "precioFinal": 300,
@@ -102,7 +102,7 @@
     "derecho": {
       "codigo": 400,
       "origen": "Cali",
-      "destino": "SantaMarta",
+      "destino": "Santa Marta",
       "horaSalida": "09:00",
       "precioBase": 320,
       "precioFinal": 320,
@@ -114,7 +114,7 @@
       "izquierdo": {
         "codigo": 350,
         "origen": "Pasto",
-        "destino": "Bogota",
+        "destino": "Bogotá",
         "horaSalida": "08:30",
         "precioBase": 310,
         "precioFinal": 310,
@@ -145,7 +145,7 @@
       "derecho": {
         "codigo": 450,
         "origen": "Cartagena",
-        "destino": "Medellin",
+        "destino": "Medellín",
         "horaSalida": "09:30",
         "precioBase": 360,
         "precioFinal": 360,
@@ -158,7 +158,7 @@
         "derecho": {
           "codigo": 475,
           "origen": "Neiva",
-          "destino": "Bogota",
+          "destino": "Bogotá",
           "horaSalida": "09:45",
           "precioBase": 370,
           "precioFinal": 370,
@@ -180,7 +180,7 @@
   "derecho": {
     "codigo": 700,
     "origen": "Barranquilla",
-    "destino": "Bogota",
+    "destino": "Bogotá",
     "horaSalida": "12:00",
     "precioBase": 420,
     "precioFinal": 420,
@@ -192,7 +192,7 @@
     "izquierdo": {
       "codigo": 600,
       "origen": "Villavicencio",
-      "destino": "Medellin",
+      "destino": "Medellín",
       "horaSalida": "11:00",
       "precioBase": 390,
       "precioFinal": 390,
@@ -204,7 +204,7 @@
       "izquierdo": {
         "codigo": 550,
         "origen": "Riohacha",
-        "destino": "Bogota",
+        "destino": "Bogotá",
         "horaSalida": "10:30",
         "precioBase": 380,
         "precioFinal": 380,
@@ -216,7 +216,7 @@
         "izquierdo": {
           "codigo": 525,
           "origen": "Sincelejo",
-          "destino": "Medellin",
+          "destino": "Medellín",
           "horaSalida": "10:15",
           "precioBase": 365,
           "precioFinal": 365,
@@ -234,8 +234,8 @@
       },
       "derecho": {
         "codigo": 650,
-        "origen": "Popayan",
-        "destino": "Bogota",
+        "origen": "Popayán",
+        "destino": "Bogotá",
         "horaSalida": "11:30",
         "precioBase": 410,
         "precioFinal": 410,
@@ -248,7 +248,7 @@
         "derecho": {
           "codigo": 675,
           "origen": "Leticia",
-          "destino": "Bogota",
+          "destino": "Bogotá",
           "horaSalida": "11:45",
           "precioBase": 430,
           "precioFinal": 430,
@@ -267,8 +267,8 @@
     },
     "derecho": {
       "codigo": 800,
-      "origen": "SanAndres",
-      "destino": "Bogota",
+      "origen": "San Andrés",
+      "destino": "Bogotá",
       "horaSalida": "13:00",
       "precioBase": 460,
       "precioFinal": 460,
@@ -280,7 +280,7 @@
       "izquierdo": {
         "codigo": 750,
         "origen": "Yopal",
-        "destino": "Medellin",
+        "destino": "Medellín",
         "horaSalida": "12:30",
         "precioBase": 440,
         "precioFinal": 440,
@@ -291,8 +291,8 @@
         "factorEquilibrio": 0,
         "izquierdo": {
           "codigo": 725,
-          "origen": "Tunja",
-          "destino": "Bogota",
+          "origen": "Yopal",
+          "destino": "Bogotá",
           "horaSalida": "12:15",
           "precioBase": 435,
           "precioFinal": 435,
@@ -311,7 +311,7 @@
       "derecho": {
         "codigo": 900,
         "origen": "Valledupar",
-        "destino": "Bogota",
+        "destino": "Bogotá",
         "horaSalida": "13:30",
         "precioBase": 480,
         "precioFinal": 480,
@@ -323,8 +323,8 @@
         "izquierdo": null,
         "derecho": {
           "codigo": 950,
-          "origen": "Quibdo",
-          "destino": "Medellin",
+          "origen": "Quibdó",
+          "destino": "Medellín",
           "horaSalida": "13:45",
           "precioBase": 500,
           "precioFinal": 500,
