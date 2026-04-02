@@ -433,7 +433,7 @@ async function manejarInsercion(e) {
       horaSalida: document.getElementById("input-hora").value,
       precioBase: parseFloat(document.getElementById("input-precio").value),
       pasajeros: vueloEnEdicion
-        ? vueloEnEdicion.pasajerosFinal
+        ? vueloEnEdicion.pasajerosFinal || vueloEnEdicion.pasajerosOriginales
         : parseInt(document.getElementById("input-pasajeros").value),
       promocion: document.getElementById("input-promocion").checked,
       alerta: document.getElementById("input-alerta").checked,
@@ -611,6 +611,9 @@ function mostrarInterfazPasajeros(pasajerosActuales) {
     radio.addEventListener("change", actualizarPreview),
   );
   inputCambio.addEventListener("input", actualizarPreview);
+
+  // Inicializar pasajerosFinal con el valor actual (importante si el usuario no toca nada)
+  vueloEnEdicion.pasajerosFinal = pasajerosActuales;
 }
 
 function cancelarEdicion(esExplicito = false) {
