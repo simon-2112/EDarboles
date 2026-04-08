@@ -7,22 +7,22 @@ const API_BASE_URL = "http://localhost:5000/api/tree";
 /**
  * Function base for HTTP requests
  */
-async function apiFetch(endpoint, metodo = "GET", datos = null) {
-  const opciones = {
-    method: metodo,
+async function apiFetch(endpoint, method = "GET", data = null) {
+  const options = {
+    method: method,
     headers: { "Content-Type": "application/json" },
   };
 
-  if (datos) opciones.body = JSON.stringify(datos);
+  if (data) options.body = JSON.stringify(data);
 
-  const respuesta = await fetch(`${API_BASE_URL}${endpoint}`, opciones);
-  const resultado = await respuesta.json();
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+  const result = await response.json();
 
-  if (!respuesta.ok) {
-    throw new Error(resultado.message || `Error ${respuesta.status}`);
+  if (!response.ok) {
+    throw new Error(response.message || `Error ${response.status}`);
   }
 
-  return resultado;
+  return result;
 }
 
 // ─────────────── Tree AVL ───────────────

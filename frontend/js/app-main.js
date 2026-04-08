@@ -193,7 +193,7 @@ async function updateUI() {
   await new Promise((resolve) => requestAnimationFrame(resolve));
 
   // 3. Resize and draw
-  visualizer._redimensionarCanvas();
+  visualizer._resizeCanvas();
   visualizer.draw(currentTree);
 
   // 4. Update metrics and versions (async, does not block drawing)
@@ -426,7 +426,7 @@ async function handleInsertion(e) {
       horaSalida: document.getElementById("input-hora").value,
       precioBase: parseFloat(document.getElementById("input-precio").value),
       pasajeros: flightInEdit
-        ? flightInEdit.pasajerosFinal || flightInEdit.pasajerosOriginales
+        ? flightInEdit.finalPassengers || flightInEdit.originalPassengers
         : parseInt(document.getElementById("input-pasajeros").value),
       promocion: document.getElementById("input-promocion").checked,
       alerta: document.getElementById("input-alerta").checked,
@@ -509,7 +509,7 @@ async function handleLoadFlight() {
     document.getElementById("input-alerta").checked = flight.alerta;
 
     // NEW: Store original passengers and show improved interface
-    flightInEdit.pasajerosOriginales = flight.pasajeros;
+    flightInEdit.originalPassengers = flight.pasajeros;
     showPassengersUI(flight.pasajeros);
 
     // Enable only update fields
@@ -592,14 +592,14 @@ function showPassengersUI(currentPassengers) {
       `Total será: <strong>${total}</strong> pasajeros`;
 
     // Save calculated total
-    flightInEdit.pasajerosFinal = total;
+    flightInEdit.finalPassengers = total;
   };
 
   radios.forEach((radio) => radio.addEventListener("change", updatePreview));
   inputChange.addEventListener("input", updatePreview);
 
   // Initialize pasajerosFinal with current value (important if user doesn't change)
-  flightInEdit.pasajerosFinal = currentPassengers;
+  flightInEdit.finalPassengers = currentPassengers;
 }
 
 function cancelEdit(isExplicit = false) {
@@ -645,6 +645,11 @@ function cancelEdit(isExplicit = false) {
  */
 async function handleDeletion() {
   const code = document.getElementById("input-delete-codigo").value.trim();
+
+  if (!currentTree) {
+    showToast("No hay árbol cargado.", "warning");
+    return;
+  }
   if (!code) {
     showToast("Ingresa el código del vuelo a eliminar.", "warning");
     return;
@@ -672,6 +677,12 @@ async function handleDeletion() {
  */
 async function handleCancellation() {
   const code = document.getElementById("input-delete-codigo").value.trim();
+
+  if (!currentTree) {
+    showToast("No hay árbol cargado.", "warning");
+    return;
+  }
+
   if (!code) {
     showToast("Ingresa el código del vuelo a cancelar.", "warning");
     return;
@@ -702,6 +713,10 @@ async function handleCancellation() {
  * Tiebreaker: greater depth → larger code.
  */
 async function handleDeleteLowestProfit() {
+  if (!currentTree) {
+    showToast("No hay árbol cargado.", "warning");
+    return;
+  }
   if (!confirm("¿Eliminar el vuelo de menor rentabilidad y toda su subrama?"))
     return;
 
@@ -723,6 +738,11 @@ async function handleDeleteLowestProfit() {
  * Deletes the entire tree.
  */
 async function handleDeleteAll() {
+  if (!currentTree) {
+    showToast("No hay árbol para eliminar.", "warning");
+    return;
+  }
+
   if (!confirm("¿Eliminar todo el árbol?")) return;
 
   const btn = document.getElementById("btn-delete-all");
@@ -758,6 +778,10 @@ async function handleUndo() {
 }
 
 async function handleExport() {
+  if (!currentTree) {
+    showToast("No hay árbol para exportar.", "warning");
+    return;
+  }
   try {
     const response = await exportTree();
     const json = JSON.stringify(response.data, null, 2);
@@ -828,6 +852,10 @@ async function handleStressMode(e) {
 }
 
 async function handleRebalance() {
+  if (!currentTree) {
+    showToast("No hay árbol para rebalancear.", "warning");
+    return;
+  }
   if (!confirm("¿Rebalancear todo el árbol ahora?")) return;
   const btn = document.getElementById("btn-rebalance");
   setLoading(btn, true, "Rebalanceando…");
@@ -856,6 +884,10 @@ async function handleRebalance() {
  * and displays modal with report of inconsistent nodes.
  */
 async function handleAVLAudit() {
+  if (!currentTree) {
+    showToast("No hay árbol para verificar propiedad.", "warning");
+    return;
+  }
   try {
     const response = await auditAVL();
     showAuditModal(response);
@@ -1163,18 +1195,18 @@ async function handleLoadVersion(name) {
  * To prevent double-clicking during asynchronous operation.
  *
  * @param {HTMLButtonElement} btn   - The button to be modified.
- * @param {boolean}           activo - True to activate, False to restore.
- * @param {string}            texto  - Text to display while loading.
+ * @param {boolean}           asset - True to activate, False to restore.
+ * @param {string}            text  - Text to display while loading.
  */
-function setLoading(btn, activo, texto) {
+function setLoading(btn, asset, text) {
   if (!btn) return;
-  if (activo) {
+  if (asset) {
     btn.dataset.textoOriginal = btn.textContent;
-    btn.textContent = texto;
+    btn.textContent = text;
     btn.disabled = true;
     btn.style.opacity = "0.7";
   } else {
-    btn.textContent = btn.dataset.textoOriginal || texto;
+    btn.textContent = btn.dataset.textoOriginal || text;
     btn.disabled = false;
     btn.style.opacity = "";
   }
@@ -1182,22 +1214,22 @@ function setLoading(btn, activo, texto) {
 
 /**
  * Displays a toast notification in the upper right corner.
- * @param {string}   mensaje            - Text to display.
- * @param {'success'|'error'|'warning'|'info'} tipo - Notification type.
- * @param {number}   [duracion=3500]    - Milliseconds before it disappears.
+ * @param {string}   message            - Text to display.
+ * @param {'success'|'error'|'warning'|'info'} type - Notification type.
+ * @param {number}   [duration=3500]    - Milliseconds before it disappears.
  */
-function showToast(mensaje, tipo = "info", duracion = 3500) {
-  const iconos = { success: "✓", error: "✗", warning: "⚠", info: "ℹ" };
+function showToast(message, type = "info", duration = 3500) {
+  const icons = { success: "✓", error: "✗", warning: "⚠", info: "ℹ" };
   const toast = document.createElement("div");
-  toast.className = `sky-toast ${tipo}`;
+  toast.className = `sky-toast ${type}`;
   console.log("TOAST DEFINIDO");
   toast.innerHTML = `
-    <span class="sky-toast-icon">${iconos[tipo] ?? "ℹ"}</span>
-    <span class="sky-toast-message">${mensaje}</span>
+    <span class="sky-toast-icon">${icons[type] ?? "ℹ"}</span>
+    <span class="sky-toast-message">${message}</span>
     <button class="sky-toast-close" onclick="this.parentElement.remove()">×</button>
   `;
   document.getElementById("toast-container").appendChild(toast);
-  setTimeout(() => toast.remove(), duracion);
+  setTimeout(() => toast.remove(), duration);
 }
 
 // ════════════════════════════════════════════════════════════
@@ -1431,7 +1463,7 @@ async function visualizeConcurrencySteps(steps) {
 
       // Mark critical nodes in red if applicable
       if (step.metrics && step.metrics.desbalanceDetectado) {
-        visualizer.marcarConflictos(step.tree);
+        visualizer.markConflicts(step.tree);
       } else {
         visualizer.draw(step.tree);
       }
