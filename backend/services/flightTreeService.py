@@ -217,6 +217,8 @@ class TreeService:
 
     # this part is to save a version (version button with the name version).
     def saveVersion(self, name):
+        if not self.avl.root:
+            raise Exception("No tree loaded")
         self.versionService.saveVersion(name, self.avl)
 
     def loadVersion(self, name):

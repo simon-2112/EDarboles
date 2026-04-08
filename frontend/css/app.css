@@ -649,7 +649,7 @@ select option {
 }
 
 /* =====================================================
-   COLA DE INSERCIONES (Requerimiento 3)
+   INSERTION QUEUE (Requirement 3)
    ===================================================== */
 
 .queue-info {
@@ -675,7 +675,7 @@ select option {
     border-radius: 3px;
 }
 
-/* Panel de Procesamiento */
+/* Processing Panel */
 #processing-panel {
     background: rgba(25, 118, 210, 0.05);
     border: 1px solid rgba(25, 118, 210, 0.2);
@@ -696,13 +696,13 @@ select option {
     color: rgba(0, 0, 0, 0.6);
 }
 
-/* Indicadores de conflicto en canvas - nodos amarillo crítico para balance crítico */
+/* Conflict indicators on canvas - critical yellow nodes for critical balance */
 .tree-node-conflict {
     fill: #FFD93D;
 }
 
 
-/* Busqueda de vuelos */
+/* Flight search */
 .flight-info-card {
     background: var(--light-gray);
     border-radius: 8px;

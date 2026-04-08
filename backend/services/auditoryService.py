@@ -4,8 +4,8 @@ class AuditoryService:
 
     def auditAVL(self):
         """
-        Audita todo el árbol AVL y devuelve un reporte detallado.
-        Solo habilitado en stressMode.
+        Audit the entire AVL tree and return a detailed report.
+        Only enabled in stressMode.
         """
         if not self.treeService.stressMode:
             raise Exception("Auditory only useful with stress mode")
@@ -15,7 +15,7 @@ class AuditoryService:
 
     def _auditNode(self, node):
         """
-        Retorna un dict con información del nodo y una lista de nodos inconsistentes
+        Returns a dictionary with node information and a list of inconsistent nodes
         """
         if node is None:
             return None, []
@@ -42,7 +42,7 @@ class AuditoryService:
             "derecho": rightReport,
         }
 
-        # Lista de inconsistentes
+        # List of inconsistencies
         inconsistentNodes = leftInconsistent + rightInconsistent
         if not isConsistent:
             inconsistentNodes.append(flight.getIdFlight())

@@ -3,9 +3,9 @@
   "ordenamiento": "codigo",
   "vuelos": [
     {"codigo":"SB400","origen":"Medellín","destino":"Cartagena","horaSalida":"10:00","precioBase":400,"pasajeros":120,"prioridad":2,"promocion":false,"alerta":false},
-    {"codigo":"SB250","origen":"Bogotá","destino":"Cali","horaSalida":"08:00","precioBase":350,"pasajeros":90,"prioridad":1,"promocion":true,"alerta":false},
-    {"codigo":"SB150","origen":"Bogotá","destino":"Pereira","horaSalida":"07:00","precioBase":280,"pasajeros":70,"prioridad":3,"promocion":false,"alerta":false},
-    {"codigo":"SB120","origen":"Cúcuta","destino":"Bogotá","horaSalida":"06:00","precioBase":260,"pasajeros":10,"prioridad":2,"promocion":true,"alerta":false},
-    {"codigo":"SB110","origen":"Cúcuta","destino":"Bogotá","horaSalida":"06:00","precioBase":260,"pasajeros":65,"prioridad":2,"promocion":true,"alerta":false}
+    {"codigo":"SB300","origen":"Bogotá","destino":"Cali","horaSalida":"08:00","precioBase":350,"pasajeros":90,"prioridad":1,"promocion":true,"alerta":false},
+    {"codigo":"SB250","origen":"Bogotá","destino":"Pereira","horaSalida":"07:00","precioBase":280,"pasajeros":70,"prioridad":3,"promocion":false,"alerta":false},
+    {"codigo":"SB325","origen":"Cúcuta","destino":"Bogotá","horaSalida":"06:00","precioBase":260,"pasajeros":10,"prioridad":2,"promocion":true,"alerta":false},
+    {"codigo":"SB500","origen":"Cúcuta","destino":"Bogotá","horaSalida":"06:00","precioBase":260,"pasajeros":65,"prioridad":2,"promocion":true,"alerta":false}
   ]
 }
