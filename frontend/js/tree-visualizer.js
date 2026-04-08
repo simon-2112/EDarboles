@@ -1,15 +1,15 @@
 /**
- * Tree Visualizer - Renderiza el árbol AVL en canvas
+ * Tree Visualizer - Renders the AVL tree in canvas
  */
 
 class TreeVisualizer {
   /**
-   * @param {string} canvasId - ID del elemento <canvas> donde se dibujará.
+   * @param {string} canvasId - ID of the element <canvas> where it will be drawn.
    * @param {object} [options]
-   * @param {'avl'|'bst'} [options.treeType='avl'] - Solo los nodos AVL muestran el factor de equilibrio.
-   * @param {number}  [options.nodeRadius=28]  - Radio del círculo de cada nodo.
-   * @param {number}  [options.xSpacing=65]    - Píxeles horizontales entre centros de nodos.
-   * @param {number}  [options.ySpacing=85]    - Píxeles verticales entre niveles.
+   * @param {'avl'|'bst'} [options.treeType='avl'] - Only AVL nodes show the balance factor.
+   * @param {number}  [options.nodeRadius=28]  - Radius of the circle of each node.
+   * @param {number}  [options.xSpacing=65]    - Horizontal pixels between node centers.
+   * @param {number}  [options.ySpacing=85]    - Vertical pixels between levels.
    */
   constructor(canvasId, options = {}) {
     this.canvas = document.getElementById(canvasId);
@@ -21,27 +21,27 @@ class TreeVisualizer {
     this.xSpacing = options.xSpacing || 65;
     this.ySpacing = options.ySpacing || 85;
 
-    // Estado del viewport: nivel de zoom y desplazamiento X/Y
+    // Viewport state: zoom level and X/Y offset
     this.zoomLevel = 1;
     this.panX = 0;
     this.panY = 20;
 
-    // Referencia al árbol actual para que pan/zoom redibuje sin llamadas externas
+    // Reference to the current tree so that pan/zoom redraws without external calls
     this.currentTree = null;
 
-    // Set de IDs de nodos con conflictos de balance (para marcar en rojo)
+    // Set of node IDs with balance conflicts (to be marked in red)
     this.conflictNodes = new Set();
 
-    // Paleta de colores según el estado del nodo
+    // Color palette according to node state
     this.colors = {
-      normal: "#4ECDC4", // nodo sin condición especial
-      promotion: "#51CF66", // nodo con promoción activa
-      alert: "#FF6B6B", // nodo con alerta
-      critical: "#FFD93D", // nodo crítico por profundidad (penalización de precio)
-      edge: "#94a3b8", // color de las aristas entre nodos
-      border: "#1e293b", // borde del círculo del nodo
-      text: "#ffffff", // texto dentro del nodo
-      background: "#f8fafc", // color de fondo del canvas
+      normal: "#4ECDC4", // node without special condition
+      promotion: "#51CF66", // node with active promotion
+      alert: "#FF6B6B", // node with alert
+      critical: "#FFD93D", // critical node by depth (price penalty)
+      edge: "#94a3b8", // color of the edges between nodes
+      border: "#1e293b", // edge of the node circle
+      text: "#ffffff", // text within the node
+      background: "#f8fafc", // canvas background color
     };
 
     this._resizeCanvas();
@@ -52,9 +52,9 @@ class TreeVisualizer {
     this._configureMouseEvents();
   }
 
-  // ───────────────────────── Configuración del canvas ──────────────────────
+  // ───────────────────────── Canvas settings ──────────────────────
 
-  /** Ajusta el tamaño del canvas al tamaño de su contenedor padre. */
+  /** Adjust the canvas size to the size of its parent container. */
   _resizeCanvas() {
     const container = this.canvas.parentElement;
     if (!container) return;
@@ -62,7 +62,7 @@ class TreeVisualizer {
     this.canvas.height = container.clientHeight || 600;
   }
 
-  /** Configura los eventos de arrastre con el ratón y zoom con la rueda. */
+  /** Configure mouse drag events and wheel zoom. */
   _configureMouseEvents() {
     let dragging = false;
     let startX = 0,
@@ -89,7 +89,7 @@ class TreeVisualizer {
     this.canvas.addEventListener("mouseup", stopDrag);
     this.canvas.addEventListener("mouseleave", stopDrag);
 
-    // Zoom con la rueda del ratón: acercar hacia arriba, alejar hacia abajo
+    // Zoom with the mouse wheel: zoom in up, zoom out down
     this.canvas.addEventListener("wheel", (e) => {
       e.preventDefault();
       const factor = e.deltaY < 0 ? 1.12 : 0.9;
@@ -100,11 +100,11 @@ class TreeVisualizer {
     this.canvas.style.cursor = "grab";
   }
 
-  // ───────────────────────── Cálculo del layout ─────────────────────────────
+  // ───────────────────────── Layout calculation ─────────────────────────────
 
   /**
-   * Asigna _layoutX (índice inorden) y _layoutY (profundidad) a cada nodo.
-   * El recorrido inorden garantiza que los subárboles nunca se solapan en X.
+   * Assign _layoutX (inorder index) and _layoutY (depth) to each node.
+   * The inorder traversal ensures that the subtrees never overlap in X.
    */
   _calculateLayout(node, state = { x: 0 }, depth = 0) {
     if (!node) return;
@@ -114,7 +114,7 @@ class TreeVisualizer {
     this._calculateLayout(node.derecho, state, depth + 1);
   }
 
-  /** Cuenta el número total de nodos del subárbol de forma recursiva. */
+  /** Recursively count the total number of nodes in the subtree. */
   _countNodes(node) {
     if (!node) return 0;
     return (
@@ -122,12 +122,12 @@ class TreeVisualizer {
     );
   }
 
-  // ───────────────────────── API pública ────────────────────────────────────
+  // ───────────────────────── API public ─────────────────────────────────────
 
   /**
-   * Dibuja el árbol en el canvas. Guarda la referencia interna para que
-   * el pan y el zoom funcionen sin que el código externo tenga que pasar
-   * el árbol de nuevo.
+   * Draw the tree on the canvas. Save the internal reference so that
+   * panning and zooming work without the external code having to pass
+   * the tree again.
    * @param {object} tree - Árbol en formato JSON devuelto por el backend.
    */
   draw(tree) {
@@ -135,7 +135,7 @@ class TreeVisualizer {
     this._redraw();
   }
 
-  /** Restablece el zoom y el desplazamiento a la vista inicial. */
+  /** Reset zoom and pan to the initial view. */
   resetView() {
     this.zoomLevel = 1;
     this.panX = 0;
@@ -143,23 +143,23 @@ class TreeVisualizer {
     this._redraw();
   }
 
-  /** Acerca la vista un 20 %. */
+  /** Zoom in 20%.. */
   zoomIn() {
     this.zoomLevel = Math.min(this.zoomLevel * 1.2, 5);
     this._redraw();
   }
 
-  /** Aleja la vista un 20 %. */
+  /** Move your gaze 20% further away. */
   zoomOut() {
     this.zoomLevel = Math.max(this.zoomLevel / 1.2, 0.2);
     this._redraw();
   }
 
   /**
-   * Dibuja el árbol marcando nodos con conflictos de balance en amarillo.
-   * Se usa en la visualización de pasos de concurrencia.
-   * @param {object} tree - Árbol en formato JSON.
-   * @param {Array}  [conflictNodes] - IDs de nodos con conflictos (si no se proporciona, dibuja normal).
+   * Draw the tree, highlighting nodes with balance conflicts in yellow.
+   * Used to visualize concurrency steps.
+   * @param {object} tree - Tree in JSON format.
+   * @param {Array}  [conflictNodes] - IDs of conflicting nodes (if not provided, draw normally).
    */
   markConflicts(tree, conflictNodes = []) {
     this.currentTree = tree;
@@ -168,8 +168,8 @@ class TreeVisualizer {
   }
 
   /**
-   * Retorna estadísticas básicas del árbol para el panel de comparación AVL vs BST.
-   * @param {object} [node] - Nodo raíz (por defecto el árbol actualmente dibujado).
+   * Returns basic tree statistics for the AVL vs BST comparison panel.
+   * @param {object} [node] - Root node (by default the currently drawn tree).
    * @returns {{ root: string, depth: number, leaves: number }}
    */
   getStats(node = this.currentTree) {
@@ -181,9 +181,9 @@ class TreeVisualizer {
     };
   }
 
-  // ───────────────────────── Dibujo interno ─────────────────────────────────
+  // ───────────────────────── Internal drawing ─────────────────────────────────
 
-  /** Limpia el canvas y redibuja el árbol completo con la transformación actual. */
+  /** Clear the canvas and redraw the entire tree with the current transformation. */
   _redraw() {
     const ctx = this.ctx;
     const broad = this.canvas.width;
@@ -196,10 +196,10 @@ class TreeVisualizer {
 
     if (!this.currentTree) return;
 
-    // Paso 1: calcular coordenadas de layout para cada nodo
+    // Step 1: Calculate layout coordinates for each node
     this._calculateLayout(this.currentTree, { x: 0 }, 0);
 
-    // Paso 2: calcular desplazamiento para centrar el árbol horizontalmente
+    // Step 2: Calculate the offset to center the tree horizontally
     const n = this._countNodes(this.currentTree);
     const broadTotal = n * this.xSpacing;
     const desplX =
@@ -210,14 +210,14 @@ class TreeVisualizer {
     ctx.translate(this.panX, this.panY);
     ctx.scale(this.zoomLevel, this.zoomLevel);
 
-    // Las aristas se dibujan primero para que queden por debajo de los nodos
+    // The edges are drawn first so that they lie below the nodes.
     this._drawEdges(this.currentTree, desplX, desplY);
     this._drawNodes(this.currentTree, desplX, desplY);
 
     ctx.restore();
   }
 
-  /** Convierte las coordenadas de layout a píxeles en pantalla. */
+  /** Converts layout coordinates to screen pixels. */
   _screenPosition(node, ox, oy) {
     return {
       x: node._layoutX * this.xSpacing + ox,
@@ -225,7 +225,7 @@ class TreeVisualizer {
     };
   }
 
-  /** Dibuja las aristas (líneas) entre cada nodo y sus hijos de forma recursiva. */
+  /**  Draw the edges (lines) between each node and its children recursively. */
   _drawEdges(node, ox, oy) {
     if (!node) return;
     const p = this._screenPosition(node, ox, oy);
@@ -245,11 +245,11 @@ class TreeVisualizer {
   }
 
   /**
-   * Determina el color de relleno del nodo según su estado.
-   * Orden de prioridad: crítico (conflicto o esCritico) > alerta > promoción > normal.
+   * Determines the node's fill color based on its state.
+   * Priority order: critical (conflict or isCritical) > alert > promotion > normal.
    */
   _colorNode(node) {
-    // Mayor prioridad: si está marcado como conflicto durante concurrencia → usar color crítico
+    // Higher priority: if marked as conflict during concurrency → use critical color
     if (this.conflictNodes && this.conflictNodes.has(node.codigo))
       return this.colors.critical;
     if (node.esCritico) return this.colors.critical;
@@ -258,57 +258,57 @@ class TreeVisualizer {
     return this.colors.normal;
   }
 
-  /** Dibuja el círculo, el código del vuelo y el factor de equilibrio de cada nodo. */
+  /** Draw the circle, the flight code, and the balance factor of each node. */
   _drawNodes(node, ox, oy) {
     if (!node) return;
     const ctx = this.ctx;
     const { x, y } = this._screenPosition(node, ox, oy);
     const r = this.nodeRadius;
 
-    // Sombra para dar profundidad visual al nodo
+    // Shadow to give visual depth to the node
     ctx.shadowColor = "rgba(0,0,0,0.18)";
     ctx.shadowBlur = 8;
     ctx.shadowOffsetY = 3;
 
-    // Círculo principal del nodo
+    // Main circle of the node
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fillStyle = this._colorNode(node);
     ctx.fill();
 
-    // Borde del nodo (se desactiva la sombra para el borde)
+    // Node edge (shadow for edge is disabled)
     ctx.shadowColor = "transparent";
     ctx.strokeStyle = this.colors.border;
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Configuración del texto
+    // Text settings
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = this.colors.text;
 
-    // Código del vuelo (se trunca a 7 caracteres si es más largo)
+    // Flight code (truncated to 7 characters if longer)
     const code = String(node.codigo);
     ctx.font = `bold 11px 'Segoe UI', sans-serif`;
     ctx.fillText(code.length > 7 ? code.slice(0, 7) : code, x, y - 5);
 
-    // Factor de equilibrio: solo se muestra en modo AVL y si el campo existe
+    // Balance factor: only displayed in AVL mode and if the field exists
     if (this.treeType === "avl" && node.factorEquilibrio !== undefined) {
       const Bf = node.factorEquilibrio;
       ctx.font = `9px 'Segoe UI', sans-serif`;
-      // Se muestra en rojo si el factor es inválido (árbol en modo estrés)
+      // It is shown in red if the factor is invalid (tree in stress mode)
       ctx.fillStyle = Math.abs(Bf) > 1 ? "#ff4444" : this.colors.text;
       ctx.fillText(`BF:${Bf}`, x, y + 8);
     }
 
-    // Dibujar hijos de forma recursiva
+    // Draw children recursively
     this._drawNodes(node.izquierdo, ox, oy);
     this._drawNodes(node.derecho, ox, oy);
   }
 
-  // ───────────────────────── Funciones auxiliares ───────────────────────────
+  // ───────────────────────── auxiliary functions ───────────────────────────
 
-  /** Calcula la altura del árbol desde un nodo raíz dado. */
+  /** Calculate the height of the tree from a given root node. */
   _heightTree(node) {
     if (!node) return -1;
     return (
@@ -317,7 +317,7 @@ class TreeVisualizer {
     );
   }
 
-  /** Cuenta la cantidad de hojas (nodos sin hijos) del árbol. */
+  /** Count the number of leaves (nodes without children) in the tree. */
   _countLeaves(node) {
     if (!node) return 0;
     if (!node.izquierdo && !node.derecho) return 1;
@@ -325,7 +325,7 @@ class TreeVisualizer {
   }
 }
 
-// Compatibilidad con entornos Node.js / CommonJS además del navegador
+// Compatibility with Node.js / CommonJS environments in addition to the browser
 if (typeof module !== "undefined" && module.exports) {
   module.exports = TreeVisualizer;
 }
