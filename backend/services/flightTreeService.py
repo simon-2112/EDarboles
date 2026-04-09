@@ -208,8 +208,11 @@ class TreeService:
             "derecho": self.nodeToJson(node.getRightChild()),
         }
 
-    def getTreeJson(self):
+    def getAvlTreeJson(self):
         return self.nodeToJson(self.avl.root)
+
+    def getBstTreeJson(self):
+        return self.nodeToJson(self.bst.root)
 
     # does the same that getTreeJson method..??
     def exportTree(self):

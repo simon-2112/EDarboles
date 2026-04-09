@@ -253,7 +253,7 @@ async function handleFileSelected(e) {
   try {
     const response = await createTree(data);
     currentTree = response.data;
-    lastLoadedJson = data;
+    lastLoadedJson = response.dataBst;
 
     await updateUI();
 
@@ -267,7 +267,7 @@ async function handleFileSelected(e) {
       Array.isArray(data.vuelos) &&
       data.vuelos.length > 0
     ) {
-      setTimeout(() => showComparisonModal(currentTree, data.vuelos), 150);
+      setTimeout(() => showComparisonModal(currentTree, lastLoadedJson), 150);
     }
   } catch (err) {
     showToast(`Error al crear el árbol: ${err.message}`, "error");
@@ -277,66 +277,11 @@ async function handleFileSelected(e) {
 }
 
 // ────────────────────────────────────────────────────────────
-// BST local for comparison (the backend only exposes the AVL)
-// ────────────────────────────────────────────────────────────
-
-function _numericCode(code) {
-  const digits = String(code).replace(/\D/g, "");
-  return digits ? parseInt(digits, 10) : 0;
-}
-
-function _createBSTNode(flight) {
-  return {
-    codigo: flight.codigo,
-    _numCodigo: _numericCode(flight.codigo),
-    origen: flight.origen,
-    destino: flight.destino,
-    alerta: !!flight.alerta,
-    promocion: !!flight.promocion,
-    esCritico: false,
-    factorEquilibrio: undefined,
-    izquierdo: null,
-    derecho: null,
-  };
-}
-
-function _insertIntoBST(root, flight) {
-  const node = _createBSTNode(flight);
-  if (!root) return node;
-  let current = root;
-  while (true) {
-    if (node._numCodigo < current._numCodigo) {
-      if (!current.izquierdo) {
-        current.izquierdo = node;
-        break;
-      }
-      current = current.izquierdo;
-    } else if (node._numCodigo > current._numCodigo) {
-      if (!current.derecho) {
-        current.derecho = node;
-        break;
-      }
-      current = current.derecho;
-    } else {
-      break; // duplicate, ignored
-    }
-  }
-  return root;
-}
-
-function buildLocalBST(flights) {
-  let root = null;
-  for (const f of flights) root = _insertIntoBST(root, f);
-  return root;
-}
-
-// ────────────────────────────────────────────────────────────
 // AVL vs BST comparison mode (requirement 1.1)
 // ────────────────────────────────────────────────────────────
 
-function showComparisonModal(treeAVL, flights) {
+function showComparisonModal(treeAVL, treeBST) {
   document.getElementById("modal-comparacion")?.remove();
-  const treeBST = buildLocalBST(flights);
 
   const background = document.createElement("div");
   background.id = "modal-comparacion";
@@ -484,6 +429,10 @@ function clearForm() {
 // ════════════════════════════════════════════════════════════
 
 async function handleLoadFlight() {
+  if (!currentTree) {
+    showToast("No hay árbol cargado.", "warning");
+    return;
+  }
   const code = document.getElementById("input-edit-codigo").value.trim();
 
   if (!code) {
