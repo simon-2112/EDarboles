@@ -26,7 +26,13 @@ class QueueService:
             node = Node(flight)
 
             treeService.saveState()
-            treeService.avl.insert(node)
+
+            rebalance = (
+                not treeService.stressMode
+                if hasattr(treeService, "stressMode")
+                else True
+            )
+            treeService.avl.insert(node, rebalance=rebalance)
 
             bf = treeService.avl.balance_factor(treeService.avl.root)
             # take this for the stress mode case

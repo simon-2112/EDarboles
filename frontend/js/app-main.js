@@ -365,7 +365,10 @@ async function handleInsertion(e) {
   setLoading(btn, true, flightInEdit ? "Guardando..." : "Insertando…");
   try {
     const data = {
-      codigo: document.getElementById("input-codigo").value.trim(),
+      codigo: document
+        .getElementById("input-codigo")
+        .value.trim()
+        .toUpperCase(),
       origen: document.getElementById("input-origen").value.trim(),
       destino: document.getElementById("input-destino").value.trim(),
       horaSalida: document.getElementById("input-hora").value,
@@ -461,8 +464,8 @@ async function handleLoadFlight() {
     flightInEdit.originalPassengers = flight.pasajeros;
     showPassengersUI(flight.pasajeros);
 
+    document.getElementById("input-codigo").disabled = true;
     // Enable only update fields
-    document.getElementById("input-codigo").disabled = false;
     document.getElementById("input-origen").disabled = false;
     document.getElementById("input-destino").disabled = false;
     document.getElementById("input-hora").disabled = false;
@@ -566,6 +569,8 @@ function cancelEdit(isExplicit = false) {
   btnSubmit.dataset.textoOriginal = "Insertar";
   btnSubmit.classList.add("btn-success");
   btnSubmit.classList.remove("btn-primary");
+
+  document.getElementById("input-codigo").disabled = false;
 
   // Hide indicator
   document.getElementById("edit-mode-indicator").style.display = "none";
@@ -1365,8 +1370,16 @@ async function handleProcessQueue() {
     updateQueueCounter();
     updateQueueList();
 
-    // Reload tree after processing
-    await loadTree();
+    // When stress mode is inactive, reload the entire UI (fetches from backend)
+    // When stress mode is active, only redraw the current tree without reloading (prevents auto-balancing)
+    if (!stressModeActive) {
+      updateUI();
+    } else {
+      visualizer._resizeCanvas();
+      visualizer.draw(currentTree);
+      updateMetrics();
+      updateVersionList();
+    }
   }
 }
 
@@ -1383,6 +1396,12 @@ function handleStopProcessing() {
  * @param {Array} steps - Array of steps from server
  */
 async function visualizeConcurrencySteps(steps) {
+  // Ensure canvas is visible and properly sized before drawing visualization steps
+  hideEmptyState(); // Make canvas visible and hide the empty state message
+  await new Promise((resolve) => requestAnimationFrame(resolve)); // Wait for browser layout recalculation
+  visualizer._resizeCanvas(); // Resize canvas to match container's actual dimensions
+  visualizer.resetView(); // Reset zoom and pan to initial centered view
+
   for (let i = 0; i < steps.length && !stopProcess; i++) {
     const step = steps[i];
 
@@ -1431,8 +1450,12 @@ async function visualizeConcurrencySteps(steps) {
   showToast(
     `Processed: ${steps.length} steps | Detected conflicts: ${conflicts}`,
     conflicts > 0 ? "warning" : "success",
-    5000,
+    3000,
   );
+
+  // Update metrics with the final tree
+  await updateMetrics();
+  await updateVersionList();
 }
 
 /**
