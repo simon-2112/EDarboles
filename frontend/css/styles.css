@@ -241,6 +241,217 @@ body {
     font-size: 1rem;
 }
 
+/* Documentation Page Styles */
+.docs-container {
+    max-width: 1200px;
+    margin: 80px auto 0;
+    padding: 2rem;
+}
+
+.docs-header {
+    text-align: center;
+    margin-bottom: 3rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.docs-header .logo-main {
+    height: 150px;
+    margin-bottom: 1.5rem;
+}
+
+.docs-header .title {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.docs-header .subtitle {
+    font-size: 1.3rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Sección de manuales */
+.manuals-section {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.manuals-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 2rem;
+    width: 100%;
+    max-width: 900px;
+}
+
+.manual-card {
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 2.5rem 2rem;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    text-decoration: none;
+}
+
+.manual-card:hover {
+    transform: translateY(-5px);
+    border-color: rgba(0, 212, 255, 0.5);
+    background: rgba(0, 0, 0, 0.4);
+    box-shadow: 0 10px 30px rgba(0, 212, 255, 0.2);
+}
+
+.manual-icon {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+}
+
+.manual-card h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    color: #00d4ff;
+    font-weight: 600;
+}
+
+.manual-card p {
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.btn-manual {
+    padding: 0.8rem 2rem;
+    background: linear-gradient(135deg, #00d4ff, #0099cc);
+    color: white;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    align-self: center;
+    margin-top: auto;
+}
+
+.btn-manual:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(0, 212, 255, 0.4);
+}
+
+.btn-manual:active {
+    transform: scale(0.98);
+}
+
+/* Sección del visor de PDF */
+.pdf-viewer-section {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.pdf-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.pdf-header h2 {
+    font-size: 1.5rem;
+    color: #00d4ff;
+    margin: 0;
+    flex-grow: 1;
+}
+
+.btn-close-viewer {
+    background: transparent;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-close-viewer:hover {
+    border-color: rgba(255, 100, 100, 0.8);
+    color: #ff6464;
+    background: rgba(255, 100, 100, 0.1);
+}
+
+/* Controles del PDF */
+.pdf-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.pdf-controls span {
+    font-weight: 600;
+    color: #00d4ff;
+    font-size: 1.1rem;
+}
+
+.btn-control {
+    padding: 0.6rem 1.5rem;
+    background: rgba(0, 212, 255, 0.2);
+    border: 2px solid #00d4ff;
+    color: #00d4ff;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-control:hover {
+    background: rgba(0, 212, 255, 0.4);
+    transform: scale(1.05);
+}
+
+.btn-control:active {
+    transform: scale(0.95);
+}
+
+.btn-control:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Canvas del PDF */
+.pdf-canvas-container {
+    display: flex;
+    justify-content: center;
+    overflow-auto;
+    max-height: 600px;
+    border-radius: 10px;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+#the-canvas {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    border-radius: 5px;
+}
+
 @media (max-width: 768px) {
     .header-content {
         flex-direction: column;
@@ -284,5 +495,43 @@ body {
     .about-section p,
     .about-list li {
         font-size: 0.95rem;
+    }
+
+    /* Documentation responsive */
+    .docs-container {
+        margin-top: 100px;
+        padding: 1rem;
+    }
+
+    .manuals-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .pdf-viewer-section {
+        padding: 1rem;
+    }
+
+    .pdf-header {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+
+    .pdf-header h2 {
+        font-size: 1.2rem;
+    }
+
+    .pdf-canvas-container {
+        max-height: 400px;
+    }
+
+    .pdf-controls {
+        gap: 1rem;
+        font-size: 0.9rem;
+    }
+
+    .btn-control {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
     }
 }

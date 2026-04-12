@@ -396,6 +396,22 @@ async function handleInsertion(e) {
       return;
     }
 
+    // Duplicate validation in insert mode
+    if (!flightInEdit) {
+      try {
+        await searchFlight(data.codigo);
+        // Si llegamos aquí, el vuelo ya existe
+        showToast(`El código ${data.codigo} ya existe en el árbol.`, "error");
+        setLoading(btn, false, "Insertar");
+        return;
+      } catch (err) {
+        //
+        if (!err.message.includes("Flight not found")) {
+          throw err;
+        }
+      }
+    }
+
     let response;
 
     if (flightInEdit) {
