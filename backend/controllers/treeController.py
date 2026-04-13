@@ -216,7 +216,7 @@ def reset_tree():
         service.avl = AvlTree()
         service.bst = BstTree()
 
-        return jsonify({"status": "success", "message": "Tree reset"}), 200
+        return jsonify({"status": "success", "message": "Árbol eliminado"}), 200
 
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 400
