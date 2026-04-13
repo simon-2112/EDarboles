@@ -1,6 +1,7 @@
 from models.Queue import Queue
 from models.Node import Node
 
+
 class QueueService:
 
     def __init__(self):
@@ -18,23 +19,31 @@ class QueueService:
         while the queue not empty ... process
         """
         steps = []
-        
+
         while not self.queue.isEmpty():
             flight = self.queue.dequeue()
 
             node = Node(flight)
 
             treeService.saveState()
-            treeService.avl.insert(node)
+
+            rebalance = (
+                not treeService.stressMode
+                if hasattr(treeService, "stressMode")
+                else True
+            )
+            treeService.avl.insert(node, rebalance=rebalance)
 
             bf = treeService.avl.balance_factor(treeService.avl.root)
-            #take this for the stress mode case
+            # take this for the stress mode case
             conflict = abs(bf) > 1
 
-            steps.append({
-                "inserted": flight.getIdFlight(),
-                "conflict": conflict,
-                "tree": treeService.getTreeJson()
-            })
+            steps.append(
+                {
+                    "inserted": flight.getIdFlight(),
+                    "conflict": conflict,
+                    "tree": treeService.getAvlTreeJson(),
+                }
+            )
 
         return steps

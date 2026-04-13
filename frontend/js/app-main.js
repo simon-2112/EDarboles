@@ -1,46 +1,43 @@
 /**
  * App Main - SkyBalance AVL
- *
- * Gestiona todos los eventos de la interfaz, las llamadas a la API y las
- * actualizaciones visuales.
- *
- * Dependencias (deben cargarse antes en el HTML):
- *   api-client.js      → funciones de comunicación con el backend Flask
- *   tree-visualizer.js → clase TreeVisualizer para dibujar en canvas
+ * Handles all interface events, API calls, and visual updates.
+ * Dependencies (must be loaded in the HTML beforehand):
+ * api-client.js → functions for communicating with the Flask backend
+ * tree-visualizer.js → TreeVisualizer class for drawing on canvas
  */
 
 // ════════════════════════════════════════════════════════════
-// ESTADO GLOBAL
+// GLOBAL STATE
 // ════════════════════════════════════════════════════════════
 
-let visualizador = null; // Instancia de TreeVisualizer para el canvas principal
-let arbolActual = null; // Último árbol AVL recibido del backend
-let modoEstresActivo = false; // Indica si el modo estrés está activado
-let ultimoJsonCargado = null; // JSON del último archivo cargado (para construir el BST local)
+let visualizer = null; // Instance of TreeVisualizer for main canvas
+let currentTree = null; // Latest AVL tree received from backend
+let stressModeActive = false; // Indicates if stress mode is activated
+let lastLoadedJson = null; // JSON of last loaded file (to build local BST)
 
-// ── Cola de Inserciones (Requerimiento 3) ──────────────────
-let colaVuelos = []; // Array de vuelos pendientes por procesar
-let procesandoCola = false; // Flag para indicar si está procesando
-let detenerProceso = false; // Flag para cancelar el procesamiento
+// ── Insertion Queue (Requirement 3) ──────────────────────────
+let flightQueue = []; // Array of pending flights to process
+let processingQueue = false; // Flag to indicate if processing
+let stopProcess = false; // Flag to cancel processing
 
-// ── Edición de Vuelos ────────────────────────────────────────
-let vueloEnEdicion = null; // Almacena el vuelo en modo edición
+// ── Flight Editing ────────────────────────────────────────────
+let flightInEdit = null; // Stores flight in edit mode
 
 // ════════════════════════════════════════════════════════════
-// INICIALIZACIÓN
+// INICIALIZATION
 // ════════════════════════════════════════════════════════════
 
 document.addEventListener("DOMContentLoaded", () => {
-  visualizador = new TreeVisualizer("tree-canvas");
+  visualizer = new TreeVisualizer("tree-canvas");
 
-  // Cargar el árbol que el backend tenga en memoria al abrir la app
-  cargarArbol();
+  // Load the tree that backend has in memory when opening the app
+  loadTree();
 
-  actualizarListaVersiones();
+  updateVersionList();
 
-  // cargar las ciudades con aeropuertos
-  cargarCiudades();
-  // ── Carga de archivo ──────────────────────────────────────
+  // load cities with airports
+  loadCities();
+  // ── Load file ──────────────────────────────────────
   document
     .getElementById("btn-load-file")
     .addEventListener("click", () =>
@@ -48,311 +45,252 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   document
     .getElementById("file-input")
-    .addEventListener("change", manejarArchivoSeleccionado);
+    .addEventListener("change", handleFileSelected);
 
-  // ── Insertar vuelo ────────────────────────────────────────
+  // ── Insert flight ────────────────────────────────────────
   document
     .getElementById("form-insert")
-    .addEventListener("submit", manejarInsercion);
+    .addEventListener("submit", handleInsertion);
 
-  // ── Editar vuelo ────────────────────────────────────────
+  // ── Edit flight ────────────────────────────────────────
   document
     .getElementById("btn-load-flight")
-    .addEventListener("click", manejarCargarVuelo);
+    .addEventListener("click", handleLoadFlight);
   document
     .getElementById("btn-cancel-edit")
-    .addEventListener("click", () => cancelarEdicion(true));
+    .addEventListener("click", () => cancelEdit(true));
 
-  // ── Eliminar / cancelar ───────────────────────────────────
+  // ── Delete / Cancel ───────────────────────────────────
   document
     .getElementById("btn-delete")
-    .addEventListener("click", manejarEliminacion);
+    .addEventListener("click", handleDeletion);
   document
     .getElementById("btn-cancel")
-    .addEventListener("click", manejarCancelacion);
+    .addEventListener("click", handleCancellation);
   document
     .getElementById("btn-delete-rental-node")
-    .addEventListener("click", manejarEliminarMenorRentabilidad);
+    .addEventListener("click", handleDeleteLowestProfit);
   document
     .getElementById("btn-delete-all")
-    .addEventListener("click", manejarEliminarTodo);
-  // ── Deshacer / exportar ───────────────────────────────────
-  document
-    .getElementById("btn-undo")
-    .addEventListener("click", manejarDeshacer);
-  document
-    .getElementById("btn-export")
-    .addEventListener("click", manejarExportar);
+    .addEventListener("click", handleDeleteAll);
+  // ── Undo / export ───────────────────────────────────
+  document.getElementById("btn-undo").addEventListener("click", handleUndo);
+  document.getElementById("btn-export").addEventListener("click", handleExport);
 
-  // ── Navegación ────────────────────────────────────────────
+  // ── Navegation ────────────────────────────────────────────
   document
     .getElementById("btn-home")
     .addEventListener("click", () => (window.location.href = "index.html"));
 
-  // ── Modo estrés ───────────────────────────────────────────
+  // ── Stress Mode ───────────────────────────────────────────
   document
     .getElementById("toggle-stress")
-    .addEventListener("change", manejarModoEstres);
+    .addEventListener("change", handleStressMode);
   document
     .getElementById("btn-rebalance")
-    .addEventListener("click", manejarRebalanceo);
+    .addEventListener("click", handleRebalance);
   document
     .getElementById("btn-verify-avl")
-    .addEventListener("click", manejarAuditoriaAVL);
+    .addEventListener("click", handleAVLAudit);
 
   // ── Zoom ──────────────────────────────────────────────────
   document
     .getElementById("btn-zoom-in")
-    .addEventListener("click", () => visualizador.zoomIn());
+    .addEventListener("click", () => visualizer.zoomIn());
   document
     .getElementById("btn-zoom-out")
-    .addEventListener("click", () => visualizador.zoomOut());
+    .addEventListener("click", () => visualizer.zoomOut());
   document
     .getElementById("btn-reset-view")
-    .addEventListener("click", () => visualizador.resetView());
+    .addEventListener("click", () => visualizer.resetView());
 
-  // ── Buscar vuelos ──────────────────────────────────────────────────
+  // ── Search flights ──────────────────────────────────────────────────
   document
     .getElementById("btn-search-flight")
-    .addEventListener("click", manejarBusquedaVuelo);
+    .addEventListener("click", handleFlightSearch);
   document
     .getElementById("input-search-codigo")
     .addEventListener("keydown", (e) => {
-      if (e.key === "Enter") manejarBusquedaVuelo();
+      if (e.key === "Enter") handleFlightSearch();
     });
 
-  // ── Recorridos ────────────────────────────────────────────
+  // ── Traversals ────────────────────────────────────────────
   ["inorder", "preorder", "postorder", "bfs"].forEach((tipo) =>
     document
       .getElementById(`btn-traversal-${tipo}`)
-      .addEventListener("click", () => manejarRecorrido(tipo)),
+      .addEventListener("click", () => handleTraversal(tipo)),
   );
 
-  // ── Profundidad crítica ────────────────────────────────────
+  // ── depth Critical ────────────────────────────────────
   document
     .getElementById("btn-update-depth")
-    .addEventListener("click", manejarActualizarProfundidad);
+    .addEventListener("click", handleUpdateDepth);
 
-  // ── Versiones ──────────────────────────────────────────────
+  // ── Versions ──────────────────────────────────────────────
   document
     .getElementById("btn-save-version")
-    .addEventListener("click", manejarGuardarVersion);
+    .addEventListener("click", handleSaveVersion);
 
-  // ── Cola de Inserciones (Requerimiento 3) ──────────────────
+  // ── Insertion Queue (Requirement 3) ──────────────────
   document
     .getElementById("btn-enqueue")
-    .addEventListener("click", manejarEnqueueVuelo);
+    .addEventListener("click", handleEnqueueFlight);
   document
     .getElementById("btn-process-queue")
-    .addEventListener("click", manejarProcesarCola);
+    .addEventListener("click", handleProcessQueue);
   document
     .getElementById("btn-clear-queue")
-    .addEventListener("click", manejarLimpiarCola);
+    .addEventListener("click", handleClearQueue);
   document
     .getElementById("btn-stop-processing")
-    .addEventListener("click", manejarDetenerProcesamiento);
+    .addEventListener("click", handleStopProcessing);
 
-  // ESC cancela edición o limpia el formulario
+  // ESC cancels edit or clears the form
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
-      if (vueloEnEdicion) {
-        cancelarEdicion(true);
+      if (flightInEdit) {
+        cancelEdit(true);
       } else {
-        limpiarFormulario();
+        clearForm();
       }
     }
   });
 });
 
 // ════════════════════════════════════════════════════════════
-// CARGAR / ACTUALIZAR ÁRBOL
+// LOAD / UPDATE TREE
 // ════════════════════════════════════════════════════════════
 
-/** Solicita el árbol actual al backend y actualiza la interfaz. */
-async function cargarArbol() {
+/** Requests the current tree from backend and updates the UI. */
+async function loadTree() {
   try {
-    const respuesta = await getTree();
-    arbolActual = respuesta.data;
-    await actualizarInterfaz();
+    const response = await getTree();
+    currentTree = response.data;
+    await updateUI();
   } catch {
-    mostrarEstadoVacio();
+    showEmptyState();
   }
 }
 
 /**
- * Redibuja el árbol y actualiza métricas y lista de versiones.
+ * Redraws the tree and updates metrics and version list.
  *
- * CORRECCIÓN CANVAS: el canvas puede tener dimensiones 0 si estaba
- * oculto (display:none) cuando se construyó el DOM. Por eso se
- * redimensiona explícitamente antes de dibujar, usando requestAnimationFrame
- * para garantizar que el navegador ya calculó el layout visible.
+ * CANVAS FIX: the canvas may have 0 dimensions if it was
+ * hidden (display:none) when the DOM was built. That's why it's
+ * explicitly resized before drawing, using requestAnimationFrame
+ * to ensure the browser has already calculated the visible layout.
  */
-async function actualizarInterfaz() {
-  if (!arbolActual) {
-    mostrarEstadoVacio();
+async function updateUI() {
+  if (!currentTree) {
+    showEmptyState();
     return;
   }
 
-  // 1. Hacer el canvas visible primero
-  ocultarEstadoVacio();
+  // 1. Make the canvas visible first
+  hideEmptyState();
 
-  // 2. Esperar un frame de layout para que el canvas tenga dimensiones reales
+  // 2. Wait for a layout frame to be ready so that the canvas has real dimensions.
   await new Promise((resolve) => requestAnimationFrame(resolve));
 
-  // 3. Redimensionar y dibujar
-  visualizador._redimensionarCanvas();
-  visualizador.draw(arbolActual);
+  // 3. Resize and draw
+  visualizer._resizeCanvas();
+  visualizer.draw(currentTree);
 
-  // 4. Actualizar métricas y versiones (async, no bloquea el dibujado)
-  actualizarMetricas();
-  actualizarListaVersiones();
+  // 4. Update metrics and versions (async, does not block drawing)
+  updateMetrics();
+  updateVersionList();
 }
 
-function mostrarEstadoVacio() {
+function showEmptyState() {
   document.getElementById("empty-state")?.classList.remove("hidden");
   document.getElementById("tree-canvas").style.display = "none";
-  limpiarMetricas();
+  clearMetrics();
 }
 
-function ocultarEstadoVacio() {
+function hideEmptyState() {
   document.getElementById("empty-state")?.classList.add("hidden");
   document.getElementById("tree-canvas").style.display = "block";
 }
 
 // ════════════════════════════════════════════════════════════
-// CARGA DE ARCHIVO JSON
+// LOAD FILE JSON
 // ════════════════════════════════════════════════════════════
 
 /**
- * Lee el archivo JSON seleccionado por el usuario, lo envía al backend
- * (endpoint /create) y muestra el árbol resultante.
- * Para tipo INSERCION abre el modal de comparación AVL vs BST (req. 1.1).
+ * Reads the JSON file selected by the user, sends it to the backend
+ * (endpoint /create) and displays the resulting tree.
+ * For INSERCION type opens the AVL vs BST comparison modal (req. 1.1).
  */
-async function manejarArchivoSeleccionado(e) {
-  const archivo = e.target.files[0];
-  if (!archivo) return;
-  e.target.value = ""; // permite re-seleccionar el mismo archivo
+async function handleFileSelected(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  e.target.value = ""; // allows re-selecting the same file
 
-  let datos;
+  let data;
   try {
-    datos = JSON.parse(await archivo.text());
+    data = JSON.parse(await file.text());
   } catch {
-    mostrarToast("El archivo seleccionado no es un JSON válido.", "error");
+    showToast("El archivo seleccionado no es un JSON válido.", "error");
     return;
   }
 
-  if (!datos.tipo) {
-    mostrarToast(
+  if (!data.tipo) {
+    showToast(
       'El JSON debe tener el campo "tipo": INSERCION o TOPOLOGIA.',
       "error",
     );
     return;
   }
 
-  const tipo = datos.tipo.toUpperCase();
-  if (tipo !== "INSERCION" && tipo !== "TOPOLOGIA") {
-    mostrarToast('El campo "tipo" debe ser INSERCION o TOPOLOGIA.', "error");
+  const type = data.tipo.toUpperCase();
+  if (type !== "INSERCION" && type !== "TOPOLOGIA") {
+    showToast('El campo "tipo" debe ser INSERCION o TOPOLOGIA.', "error");
     return;
   }
 
   const btn = document.getElementById("btn-load-file");
   setLoading(btn, true, "Cargando…");
   try {
-    const respuesta = await createTree(datos);
-    arbolActual = respuesta.data;
-    ultimoJsonCargado = datos;
+    const response = await createTree(data);
+    currentTree = response.data;
+    lastLoadedJson = response.dataBst;
 
-    await actualizarInterfaz();
+    await updateUI();
 
-    document.getElementById("file-name").textContent = `📄 ${archivo.name}`;
+    document.getElementById("file-name").textContent = `📄 ${file.name}`;
     document.getElementById("file-info").classList.remove("hidden");
 
-    mostrarToast(`Árbol cargado desde: ${archivo.name}`, "success");
+    showToast(`Árbol cargado desde: ${file.name}`, "success");
 
     if (
-      tipo === "INSERCION" &&
-      Array.isArray(datos.vuelos) &&
-      datos.vuelos.length > 0
+      type === "INSERCION" &&
+      Array.isArray(data.vuelos) &&
+      data.vuelos.length > 0
     ) {
-      setTimeout(() => mostrarModalComparacion(arbolActual, datos.vuelos), 150);
+      setTimeout(() => showComparisonModal(currentTree, lastLoadedJson), 150);
     }
   } catch (err) {
-    mostrarToast(`Error al crear el árbol: ${err.message}`, "error");
+    showToast(`Error al crear el árbol: ${err.message}`, "error");
   } finally {
     setLoading(btn, false, "Seleccionar archivo JSON");
   }
 }
 
 // ────────────────────────────────────────────────────────────
-// BST local para la comparación (el backend solo expone el AVL)
+// AVL vs BST comparison mode (requirement 1.1)
 // ────────────────────────────────────────────────────────────
 
-function _codigoNumerico(codigo) {
-  const digitos = String(codigo).replace(/\D/g, "");
-  return digitos ? parseInt(digitos, 10) : 0;
-}
-
-function _crearNodoBST(vuelo) {
-  return {
-    codigo: vuelo.codigo,
-    _numCodigo: _codigoNumerico(vuelo.codigo),
-    origen: vuelo.origen,
-    destino: vuelo.destino,
-    alerta: !!vuelo.alerta,
-    promocion: !!vuelo.promocion,
-    esCritico: false,
-    factorEquilibrio: undefined,
-    izquierdo: null,
-    derecho: null,
-  };
-}
-
-function _insertarEnBST(raiz, vuelo) {
-  const nodo = _crearNodoBST(vuelo);
-  if (!raiz) return nodo;
-  let actual = raiz;
-  while (true) {
-    if (nodo._numCodigo < actual._numCodigo) {
-      if (!actual.izquierdo) {
-        actual.izquierdo = nodo;
-        break;
-      }
-      actual = actual.izquierdo;
-    } else if (nodo._numCodigo > actual._numCodigo) {
-      if (!actual.derecho) {
-        actual.derecho = nodo;
-        break;
-      }
-      actual = actual.derecho;
-    } else {
-      break; // duplicado, se ignora
-    }
-  }
-  return raiz;
-}
-
-function construirBSTLocal(vuelos) {
-  let raiz = null;
-  for (const v of vuelos) raiz = _insertarEnBST(raiz, v);
-  return raiz;
-}
-
-// ────────────────────────────────────────────────────────────
-// Modal de comparación AVL vs BST (requerimiento 1.1)
-// ────────────────────────────────────────────────────────────
-
-function mostrarModalComparacion(arbolAVL, vuelos) {
+function showComparisonModal(treeAVL, treeBST) {
   document.getElementById("modal-comparacion")?.remove();
-  const arbolBST = construirBSTLocal(vuelos);
 
-  const fondo = document.createElement("div");
-  fondo.id = "modal-comparacion";
-  fondo.style.cssText = `
+  const background = document.createElement("div");
+  background.id = "modal-comparacion";
+  background.style.cssText = `
     position:fixed;inset:0;background:rgba(0,0,0,.55);
     z-index:2000;display:flex;align-items:center;justify-content:center;
   `;
 
-  fondo.innerHTML = `
+  background.innerHTML = `
     <div style="
       background:#fff;border-radius:14px;padding:1.5rem;
       width:92vw;max-width:1150px;max-height:88vh;
@@ -384,12 +322,12 @@ function mostrarModalComparacion(arbolAVL, vuelos) {
     </div>
   `;
 
-  document.body.appendChild(fondo);
+  document.body.appendChild(background);
   document
     .getElementById("btn-cerrar-comparacion")
-    .addEventListener("click", () => fondo.remove());
-  fondo.addEventListener("click", (e) => {
-    if (e.target === fondo) fondo.remove();
+    .addEventListener("click", () => background.remove());
+  background.addEventListener("click", (e) => {
+    if (e.target === background) background.remove();
   });
 
   requestAnimationFrame(() => {
@@ -399,8 +337,8 @@ function mostrarModalComparacion(arbolAVL, vuelos) {
       ySpacing: 70,
       nodeRadius: 22,
     });
-    vizAVL.draw(arbolAVL);
-    const sA = vizAVL.getStats(arbolAVL);
+    vizAVL.draw(treeAVL);
+    const sA = vizAVL.getStats(treeAVL);
     document.getElementById("stats-avl").innerHTML =
       `Raíz: <strong>${sA.root}</strong> &nbsp;|&nbsp; Profundidad: <strong>${sA.depth}</strong> &nbsp;|&nbsp; Hojas: <strong>${sA.leaves}</strong>`;
 
@@ -410,131 +348,149 @@ function mostrarModalComparacion(arbolAVL, vuelos) {
       ySpacing: 70,
       nodeRadius: 22,
     });
-    vizBST.draw(arbolBST);
-    const sB = vizBST.getStats(arbolBST);
+    vizBST.draw(treeBST);
+    const sB = vizBST.getStats(treeBST);
     document.getElementById("stats-bst").innerHTML =
       `Raíz: <strong>${sB.root}</strong> &nbsp;|&nbsp; Profundidad: <strong>${sB.depth}</strong> &nbsp;|&nbsp; Hojas: <strong>${sB.leaves}</strong>`;
   });
 }
 
 // ════════════════════════════════════════════════════════════
-// INSERCIÓN DE VUELOS
+// FLIGHT INSERTION
 // ════════════════════════════════════════════════════════════
 
-async function manejarInsercion(e) {
+async function handleInsertion(e) {
   e.preventDefault();
   const btn = e.target.querySelector("button[type=submit]");
-  setLoading(btn, true, vueloEnEdicion ? "Guardando..." : "Insertando…");
+  setLoading(btn, true, flightInEdit ? "Guardando..." : "Insertando…");
   try {
-    const datos = {
-      codigo: document.getElementById("input-codigo").value.trim(),
+    const data = {
+      codigo: document
+        .getElementById("input-codigo")
+        .value.trim()
+        .toUpperCase(),
       origen: document.getElementById("input-origen").value.trim(),
       destino: document.getElementById("input-destino").value.trim(),
       horaSalida: document.getElementById("input-hora").value,
       precioBase: parseFloat(document.getElementById("input-precio").value),
-      pasajeros: vueloEnEdicion
-        ? vueloEnEdicion.pasajerosFinal || vueloEnEdicion.pasajerosOriginales
+      pasajeros: flightInEdit
+        ? flightInEdit.finalPassengers || flightInEdit.originalPassengers
         : parseInt(document.getElementById("input-pasajeros").value),
       promocion: document.getElementById("input-promocion").checked,
       alerta: document.getElementById("input-alerta").checked,
       prioridad: parseInt(document.getElementById("input-prioridad").value),
     };
 
-    if (!datos.codigo || !datos.origen || !datos.destino) {
-      mostrarToast(
+    if (!data.codigo || !data.origen || !data.destino) {
+      showToast(
         "Completa los campos obligatorios: código, origen y destino.",
         "warning",
       );
       return;
     }
-    if (datos.origen === datos.destino) {
-      mostrarToast(
+    if (data.origen === data.destino) {
+      showToast(
         "El origen y el destino no pueden ser la misma ciudad.",
         "warning",
       );
       return;
     }
 
-    let respuesta;
+    // Duplicate validation in insert mode
+    if (!flightInEdit) {
+      try {
+        await searchFlight(data.codigo);
+        // Si llegamos aquí, el vuelo ya existe
+        showToast(`El código ${data.codigo} ya existe en el árbol.`, "error");
+        setLoading(btn, false, "Insertar");
+        return;
+      } catch (err) {
+        //
+        if (!err.message.includes("Flight not found")) {
+          throw err;
+        }
+      }
+    }
 
-    if (vueloEnEdicion) {
-      // MODO EDICIÓN
-      respuesta = await updateFlight(datos.codigo, datos);
-      arbolActual = respuesta.data;
-      await actualizarInterfaz();
-      cancelarEdicion();
-      mostrarToast(
-        `Vuelo ${datos.codigo} actualizado correctamente.`,
-        "success",
-      );
+    let response;
+
+    if (flightInEdit) {
+      // EDIT MODE
+      response = await updateFlight(data.codigo, data);
+      currentTree = response.data;
+      await updateUI();
+      cancelEdit();
+      showToast(`Vuelo ${data.codigo} actualizado correctamente.`, "success");
     } else {
-      // MODO INSERCIÓN
-      respuesta = await insertFlight(datos);
-      arbolActual = respuesta.data;
-      await actualizarInterfaz();
-      limpiarFormulario();
-      mostrarToast(`Vuelo ${datos.codigo} insertado correctamente.`, "success");
+      // INSERTION MODE
+      response = await insertFlight(data);
+      currentTree = response.data;
+      await updateUI();
+      clearForm();
+      showToast(`Vuelo ${data.codigo} insertado correctamente.`, "success");
     }
   } catch (err) {
-    mostrarToast(`Error: ${err.message}`, "error");
+    showToast(`Error: ${err.message}`, "error");
   } finally {
-    setLoading(btn, false, vueloEnEdicion ? "Guardar Cambios" : "Insertar");
+    setLoading(btn, false, flightInEdit ? "Guardar Cambios" : "Insertar");
   }
 }
 
-function limpiarFormulario() {
+function clearForm() {
   document.getElementById("form-insert").reset();
-  if (vueloEnEdicion) {
-    cancelarEdicion();
+  if (flightInEdit) {
+    cancelEdit();
   }
 }
 
 // ════════════════════════════════════════════════════════════
-// EDITAR VUELO
+// EDIT FLIGHT
 // ════════════════════════════════════════════════════════════
 
-async function manejarCargarVuelo() {
-  const codigo = document.getElementById("input-edit-codigo").value.trim();
+async function handleLoadFlight() {
+  if (!currentTree) {
+    showToast("No hay árbol cargado.", "warning");
+    return;
+  }
+  const code = document.getElementById("input-edit-codigo").value.trim();
 
-  if (!codigo) {
-    mostrarToast("Ingresa el código del vuelo a editar.", "warning");
+  if (!code) {
+    showToast("Ingresa el código del vuelo a editar.", "warning");
     return;
   }
 
   try {
-    const respuesta = await searchFlight(codigo);
-    const vuelo = respuesta.data;
+    const response = await searchFlight(code);
+    const flight = response.data;
 
-    // Guardar referencia al vuelo en edición
-    vueloEnEdicion = vuelo;
+    // Store reference to flight in edit
+    flightInEdit = flight;
 
-    // Cargar datos en el formulario
-    document.getElementById("input-codigo").value = vuelo.codigo;
-    document.getElementById("input-origen").value = vuelo.origen;
-    document.getElementById("input-destino").value = vuelo.destino;
-    document.getElementById("input-hora").value = vuelo.horaSalida;
-    document.getElementById("input-precio").value = vuelo.precioBase;
-    document.getElementById("input-prioridad").value = vuelo.prioridad;
-    document.getElementById("input-promocion").checked = vuelo.promocion;
-    document.getElementById("input-alerta").checked = vuelo.alerta;
+    // Upload data to the form
+    document.getElementById("input-codigo").value = flight.codigo;
+    document.getElementById("input-origen").value = flight.origen;
+    document.getElementById("input-destino").value = flight.destino;
+    document.getElementById("input-hora").value = flight.horaSalida;
+    document.getElementById("input-precio").value = flight.precioBase;
+    document.getElementById("input-prioridad").value = flight.prioridad;
+    document.getElementById("input-promocion").checked = flight.promocion;
+    document.getElementById("input-alerta").checked = flight.alerta;
 
-    // NUEVO: Guardar pasajeros originales y mostrar interfaz mejorada
-    vueloEnEdicion.pasajerosOriginales = vuelo.pasajeros;
-    mostrarInterfazPasajeros(vuelo.pasajeros);
+    // NEW: Store original passengers and show improved interface
+    flightInEdit.originalPassengers = flight.pasajeros;
+    showPassengersUI(flight.pasajeros);
 
-    // Deshabilitar campos que no pueden cambiar
     document.getElementById("input-codigo").disabled = true;
-    document.getElementById("input-origen").disabled = true;
-    document.getElementById("input-destino").disabled = true;
-
-    // Habilitar solo campos editables
+    // Enable only update fields
+    document.getElementById("input-origen").disabled = false;
+    document.getElementById("input-destino").disabled = false;
     document.getElementById("input-hora").disabled = false;
     document.getElementById("input-precio").disabled = false;
     document.getElementById("input-prioridad").disabled = false;
     document.getElementById("input-promocion").disabled = false;
     document.getElementById("input-alerta").disabled = false;
 
-    // Cambiar botón de formulario
+    // Change form button
     const btnSubmit = document
       .getElementById("form-insert")
       .querySelector("button[type=submit]");
@@ -543,24 +499,24 @@ async function manejarCargarVuelo() {
     btnSubmit.classList.remove("btn-success");
     btnSubmit.classList.add("btn-primary");
 
-    // Mostrar indicador de edición
+    // Show edit mode indicator
     document.getElementById("edit-mode-indicator").style.display = "block";
     document.getElementById("btn-cancel-edit").style.display = "block";
     document.getElementById("input-edit-codigo").disabled = true;
     document.getElementById("btn-load-flight").disabled = true;
 
-    mostrarToast(`Vuelo ${codigo} cargado en modo edición.`, "info");
+    showToast(`Vuelo ${code} cargado en modo edición.`, "info");
   } catch (err) {
-    mostrarToast(`Error: ${err.message}`, "error");
+    showToast(`Error: ${err.message}`, "error");
   }
 }
 
-function mostrarInterfazPasajeros(pasajerosActuales) {
+function showPassengersUI(currentPassengers) {
   const container = document.getElementById("pasajeros-container");
 
   container.innerHTML = `
     <div style="background: #f0f4ff; padding: 0.8rem; border-radius: 4px; border-left: 3px solid #3b82f6;">
-      <p style="margin: 0 0 0.5rem 0; font-size: 0.9rem; color: #666;"><strong>Pasajeros Actuales:</strong> ${pasajerosActuales}</p>
+      <p style="margin: 0 0 0.5rem 0; font-size: 0.9rem; color: #666;"><strong>Pasajeros Actuales:</strong> ${currentPassengers}</p>
       
       <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
         <label style="flex: 1;">
@@ -576,59 +532,52 @@ function mostrarInterfazPasajeros(pasajerosActuales) {
       <input type="number" id="input-pasajeros-cambio" placeholder="Cantidad a agregar/eliminar" min="0" value="0" style="width: 100%; padding: 0.6rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;">
       
       <p id="pasajeros-preview" style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #0066cc;">
-        Total será: <strong>${pasajerosActuales}</strong> pasajeros
+        Total será: <strong>${currentPassengers}</strong> pasajeros
       </p>
     </div>
   `;
 
-  // Event listeners para actualizar el preview
+  // Event listeners to update the preview
   const radios = container.querySelectorAll(
     'input[name="operacion-pasajeros"]',
   );
-  const inputCambio = document.getElementById("input-pasajeros-cambio");
+  const inputChange = document.getElementById("input-pasajeros-cambio");
 
-  const actualizarPreview = () => {
-    const operacion = container.querySelector(
+  const updatePreview = () => {
+    const operation = container.querySelector(
       'input[name="operacion-pasajeros"]:checked',
     ).value;
-    const cantidad = parseInt(inputCambio.value) || 0;
+    const amount = parseInt(inputChange.value) || 0;
 
     let total;
-    if (operacion === "agregar") {
-      total = pasajerosActuales + cantidad;
+    if (operation === "agregar") {
+      total = currentPassengers + amount;
     } else {
-      total = Math.max(0, pasajerosActuales - cantidad);
+      total = Math.max(0, currentPassengers - amount);
     }
 
     document.getElementById("pasajeros-preview").innerHTML =
       `Total será: <strong>${total}</strong> pasajeros`;
 
-    // Guardar el total calculado
-    vueloEnEdicion.pasajerosFinal = total;
+    // Save calculated total
+    flightInEdit.finalPassengers = total;
   };
 
-  radios.forEach((radio) =>
-    radio.addEventListener("change", actualizarPreview),
-  );
-  inputCambio.addEventListener("input", actualizarPreview);
+  radios.forEach((radio) => radio.addEventListener("change", updatePreview));
+  inputChange.addEventListener("input", updatePreview);
 
-  // Inicializar pasajerosFinal con el valor actual (importante si el usuario no toca nada)
-  vueloEnEdicion.pasajerosFinal = pasajerosActuales;
+  // Initialize pasajerosFinal with current value (important if user doesn't change)
+  flightInEdit.finalPassengers = currentPassengers;
 }
 
-function cancelarEdicion(esExplicito = false) {
-  vueloEnEdicion = null;
+function cancelEdit(isExplicit = false) {
+  flightInEdit = null;
 
-  // Restaurar campo de pasajeros normal
+  // Restore normal passenger field
   const container = document.getElementById("pasajeros-container");
   container.innerHTML = `<input type="number" id="input-pasajeros" placeholder="Pasajeros" min="0" required>`;
 
-  // Re-habilitar campos
-  document.getElementById("input-codigo").disabled = false;
-  document.getElementById("input-origen").disabled = false;
-  document.getElementById("input-destino").disabled = false;
-
-  // Restaurar botón
+  // Restore button
   const btnSubmit = document
     .getElementById("form-insert")
     .querySelector("button[type=submit]");
@@ -637,149 +586,175 @@ function cancelarEdicion(esExplicito = false) {
   btnSubmit.classList.add("btn-success");
   btnSubmit.classList.remove("btn-primary");
 
-  // Ocultar indicador
+  document.getElementById("input-codigo").disabled = false;
+
+  // Hide indicator
   document.getElementById("edit-mode-indicator").style.display = "none";
   document.getElementById("btn-cancel-edit").style.display = "none";
   document.getElementById("input-edit-codigo").disabled = false;
   document.getElementById("btn-load-flight").disabled = false;
   document.getElementById("input-edit-codigo").value = "";
 
-  limpiarFormulario();
-  if (esExplicito) {
-    mostrarToast("Edición cancelada.", "info");
+  clearForm();
+  if (isExplicit) {
+    showToast("Edición cancelada.", "info");
   }
 }
 
 // ════════════════════════════════════════════════════════════
-// ELIMINACIÓN / CANCELACIÓN
+// DELETION / CANCELLATION
 // ════════════════════════════════════════════════════════════
 
 /**
- * Elimina únicamente el nodo indicado.
- * Sus hijos se reorganizan mediante el predecesor inorden y el árbol se rebalancea.
+ * Deletes only the indicated node.
+ * Its children are reorganized via inorder predecessor and tree is rebalanced.
  *
- * NOTA: con el bug de _delete_with_two_children corregido en el backend,
- * esta operación ahora funciona correctamente para TODOS los casos
- * (hoja, un hijo, dos hijos).
+ * NOTE: with the _delete_with_two_children bug fixed in the backend,
+ * this operation now works correctly for ALL cases
+ * (leaf, one child, two children).
  */
-async function manejarEliminacion() {
-  const codigo = document.getElementById("input-delete-codigo").value.trim();
-  if (!codigo) {
-    mostrarToast("Ingresa el código del vuelo a eliminar.", "warning");
+async function handleDeletion() {
+  const code = document.getElementById("input-delete-codigo").value.trim();
+
+  if (!currentTree) {
+    showToast("No hay árbol cargado.", "warning");
     return;
   }
-  if (!confirm(`¿Eliminar el vuelo ${codigo}? (solo este nodo)`)) return;
+  if (!code) {
+    showToast("Ingresa el código del vuelo a eliminar.", "warning");
+    return;
+  }
+  if (!confirm(`¿Eliminar el vuelo ${code}? (solo este nodo)`)) return;
 
   const btn = document.getElementById("btn-delete");
   setLoading(btn, true, "Eliminando…");
   try {
-    const respuesta = await deleteFlight(codigo);
-    arbolActual = respuesta.data;
-    await actualizarInterfaz();
+    const response = await deleteFlight(code);
+    currentTree = response.data;
+    await updateUI();
     document.getElementById("input-delete-codigo").value = "";
-    mostrarToast(`Vuelo ${codigo} eliminado y árbol rebalanceado.`, "success");
+    showToast(`Vuelo ${code} eliminado y árbol rebalanceado.`, "success");
   } catch (err) {
-    mostrarToast(`Error: ${err.message}`, "error");
+    showToast(`Error: ${err.message}`, "error");
   } finally {
     setLoading(btn, false, "Eliminar Nodo");
   }
 }
 
 /**
- * Cancela el vuelo indicado Y toda su subrama (descendientes).
- * Esta operación es más agresiva que la eliminación simple.
+ * Cancels the indicated flight AND its entire subtree (descendants).
+ * This operation is more aggressive than simple deletion.
  */
-async function manejarCancelacion() {
-  const codigo = document.getElementById("input-delete-codigo").value.trim();
-  if (!codigo) {
-    mostrarToast("Ingresa el código del vuelo a cancelar.", "warning");
+async function handleCancellation() {
+  const code = document.getElementById("input-delete-codigo").value.trim();
+
+  if (!currentTree) {
+    showToast("No hay árbol cargado.", "warning");
     return;
   }
-  if (!confirm(`¿Cancelar ${codigo} y TODOS sus descendientes?`)) return;
+
+  if (!code) {
+    showToast("Ingresa el código del vuelo a cancelar.", "warning");
+    return;
+  }
+  if (!confirm(`¿Cancelar ${code} y TODOS sus descendientes?`)) return;
 
   const btn = document.getElementById("btn-cancel");
   setLoading(btn, true, "Cancelando…");
   try {
-    const respuesta = await cancelSubtree(codigo);
-    arbolActual = respuesta.data;
-    await actualizarInterfaz();
+    const response = await cancelSubtree(code);
+    currentTree = response.data;
+    await updateUI();
     document.getElementById("input-delete-codigo").value = "";
-    mostrarToast(
-      `Vuelo ${codigo} y todos sus descendientes han sido cancelados.`,
+    showToast(
+      `Vuelo ${code} y todos sus descendientes han sido cancelados.`,
       "success",
     );
   } catch (err) {
-    mostrarToast(`Error: ${err.message}`, "error");
+    showToast(`Error: ${err.message}`, "error");
   } finally {
     setLoading(btn, false, "Cancelar Vuelo + Descendientes");
   }
 }
 
 /**
- * Elimina el vuelo de menor rentabilidad y toda su subrama.
- * Fórmula: pasajeros × precioFinal − promoción + penalización.
- * Desempate: mayor profundidad → código más grande.
+ * Deletes the flight with the lowest profitability and its entire subtree.
+ * Formula: passengers × finalPrice − promotion + penalty.
+ * Tiebreaker: greater depth → larger code.
  */
-async function manejarEliminarMenorRentabilidad() {
+async function handleDeleteLowestProfit() {
+  if (!currentTree) {
+    showToast("No hay árbol cargado.", "warning");
+    return;
+  }
   if (!confirm("¿Eliminar el vuelo de menor rentabilidad y toda su subrama?"))
     return;
 
   const btn = document.getElementById("btn-delete-rental-node");
   setLoading(btn, true, "Calculando…");
   try {
-    const respuesta = await deleteLowestProfit();
-    arbolActual = respuesta.tree;
-    await actualizarInterfaz();
-    mostrarToast(respuesta.message, "success");
+    const response = await deleteLowestProfit();
+    currentTree = response.tree;
+    await updateUI();
+    showToast(response.message, "success");
   } catch (err) {
-    mostrarToast(`Error: ${err.message}`, "error");
+    showToast(`Error: ${err.message}`, "error");
   } finally {
     setLoading(btn, false, "Eliminar Nodo Menor Rentabilidad");
   }
 }
 
 /**
- * Elimina todo el árbol.
+ * Deletes the entire tree.
  */
-async function manejarEliminarTodo() {
+async function handleDeleteAll() {
+  if (!currentTree) {
+    showToast("No hay árbol para eliminar.", "warning");
+    return;
+  }
+
   if (!confirm("¿Eliminar todo el árbol?")) return;
 
   const btn = document.getElementById("btn-delete-all");
   setLoading(btn, true, "Eliminando…");
   try {
-    const respuesta = await resetTree();
-    arbolActual = respuesta.tree;
-    await actualizarInterfaz();
-    mostrarToast(respuesta.message, "success");
+    const response = await resetTree();
+    currentTree = response.tree;
+    await updateUI();
+    showToast(response.message, "success");
   } catch (err) {
-    mostrarToast(`Error: ${err.message}`, "error");
+    showToast(`Error: ${err.message}`, "error");
   } finally {
     setLoading(btn, false, "Eliminar Todo El Árbol");
   }
 }
 // ════════════════════════════════════════════════════════════
-// DESHACER / EXPORTAR
+// UNDO / EXPORT
 // ════════════════════════════════════════════════════════════
 
-async function manejarDeshacer() {
+async function handleUndo() {
   const btn = document.getElementById("btn-undo");
   setLoading(btn, true, "Deshaciendo…");
   try {
-    const respuesta = await undoAction();
-    arbolActual = respuesta.data;
-    await actualizarInterfaz();
-    mostrarToast("Acción deshecha correctamente.", "success");
+    const response = await undoAction();
+    currentTree = response.data;
+    await updateUI();
+    showToast("Acción deshecha correctamente.", "success");
   } catch (err) {
-    mostrarToast(`Error al deshacer: ${err.message}`, "error");
+    showToast(`Error al deshacer: ${err.message}`, "error");
   } finally {
     setLoading(btn, false, "Deshacer (Ctrl+Z)");
   }
 }
 
-async function manejarExportar() {
+async function handleExport() {
+  if (!currentTree) {
+    showToast("No hay árbol para exportar.", "warning");
+    return;
+  }
   try {
-    const respuesta = await exportTree();
-    const json = JSON.stringify(respuesta.data, null, 2);
+    const response = await exportTree();
+    const json = JSON.stringify(response.data, null, 2);
     const blob = new Blob([json], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     Object.assign(document.createElement("a"), {
@@ -787,115 +762,123 @@ async function manejarExportar() {
       download: `skybalance-${new Date().toISOString().split("T")[0]}.json`,
     }).click();
     URL.revokeObjectURL(url);
-    mostrarToast("Árbol exportado correctamente.", "success");
+    showToast("Árbol exportado correctamente.", "success");
   } catch (err) {
-    mostrarToast(`Error al exportar: ${err.message}`, "error");
+    showToast(`Error al exportar: ${err.message}`, "error");
   }
 }
 
 // ════════════════════════════════════════════════════════════
-// MODO ESTRÉS
+// STRESS MODE
 // ════════════════════════════════════════════════════════════
 
-async function manejarModoEstres(e) {
+async function handleStressMode(e) {
   const btnSaveVersion = document.getElementById("btn-save-version");
-  const activando = e.target.checked;
-  const btnRebalancear = document.getElementById("btn-rebalance");
-  const btnVerificar = document.getElementById("btn-verify-avl");
-  const indicador = document.getElementById("mode-indicator");
+  const activating = e.target.checked;
+  const btnRebalance = document.getElementById("btn-rebalance");
+  const btnVerify = document.getElementById("btn-verify-avl");
+  const indicator = document.getElementById("mode-indicator");
 
-  if (activando) {
+  if (activating) {
     try {
       await activateStress();
-      modoEstresActivo = true;
-      btnRebalancear.disabled = false;
-      btnVerificar.disabled = false;
+      stressModeActive = true;
+      btnRebalance.disabled = false;
+      btnVerify.disabled = false;
       btnSaveVersion.disabled = true;
-      indicador.textContent = "⚠ Modo Estrés";
-      indicador.classList.add("stress-mode");
-      await cargarArbol();
-      mostrarToast(
+      indicator.textContent = "⚠ Modo Estrés";
+      indicator.classList.add("stress-mode");
+      await loadTree();
+      showToast(
         "Modo estrés activado. El balanceo automático está deshabilitado.",
         "warning",
       );
     } catch (err) {
       e.target.checked = false;
-      mostrarToast(`Error: ${err.message}`, "error");
+      showToast(`Error: ${err.message}`, "error");
     }
   } else {
     try {
-      // respuesta.data = { stressMode: false, rebalance: {...}, tree: <arbolJSON> }
-      const respuesta = await deactivateStress();
-      modoEstresActivo = false;
-      arbolActual = respuesta.data.tree;
-      btnRebalancear.disabled = true;
-      btnVerificar.disabled = true;
+      // response.data = { stressMode: false, rebalance: {...}, tree: <arbolJSON> }
+      const response = await deactivateStress();
+      stressModeActive = false;
+      currentTree = response.data.tree;
+      btnRebalance.disabled = true;
+      btnVerify.disabled = true;
       btnSaveVersion.disabled = false;
-      indicador.textContent = "Modo Normal";
-      indicador.classList.remove("stress-mode");
-      console.log(respuesta);
-      await actualizarInterfaz();
-      mostrarToast(
+      indicator.textContent = "Modo Normal";
+      indicator.classList.remove("stress-mode");
+      console.log(response);
+      await updateUI();
+      showToast(
         "Modo estrés desactivado. Árbol rebalanceado automáticamente.",
         "success",
       );
     } catch (err) {
       e.target.checked = true;
-      mostrarToast(`Error: ${err.message}`, "error");
+      showToast(`Error: ${err.message}`, "error");
     }
   }
 }
 
-async function manejarRebalanceo() {
+async function handleRebalance() {
+  if (!currentTree) {
+    showToast("No hay árbol para rebalancear.", "warning");
+    return;
+  }
   if (!confirm("¿Rebalancear todo el árbol ahora?")) return;
   const btn = document.getElementById("btn-rebalance");
   setLoading(btn, true, "Rebalanceando…");
   try {
-    const respuesta = await rebalanceStress();
-    const { nodes, rotations } = respuesta.data;
+    const response = await rebalanceStress();
+    const { nodes, rotations } = response.data;
     const totalRot =
       (rotations.LL || 0) +
       (rotations.RR || 0) +
       (rotations.LR || 0) +
       (rotations.RL || 0);
-    mostrarToast(
-      `Rebalanceo completado. Nodos: ${nodes} | Rotaciones: ${totalRot}`,
+    showToast(
+      `Rebalanceo completado. Nodos: ${nodes} | Rotations: ${totalRot}`,
       "success",
     );
-    await cargarArbol();
+    await loadTree();
   } catch (err) {
-    mostrarToast(`Error: ${err.message}`, "error");
+    showToast(`Error: ${err.message}`, "error");
   } finally {
     setLoading(btn, false, "Rebalancear Todo");
   }
 }
 
 /**
- * Verifica las propiedades AVL en todo el árbol (solo en modo estrés)
- * y muestra un modal con el reporte de nodos inconsistentes.
+ * Checks AVL properties on entire tree (only in stress mode)
+ * and displays modal with report of inconsistent nodes.
  */
-async function manejarAuditoriaAVL() {
+async function handleAVLAudit() {
+  if (!currentTree) {
+    showToast("No hay árbol para verificar propiedad.", "warning");
+    return;
+  }
   try {
-    const respuesta = await auditAVL();
-    mostrarModalAuditoria(respuesta);
+    const response = await auditAVL();
+    showAuditModal(response);
   } catch (err) {
-    mostrarToast(`Error en auditoría: ${err.message}`, "error");
+    showToast(`Error en auditoría: ${err.message}`, "error");
   }
 }
 
-function mostrarModalAuditoria(respuesta) {
+function showAuditModal(response) {
   document.getElementById("modal-auditoria")?.remove();
-  const inconsistentes = respuesta.inconsistentNodes || [];
-  const esValido = inconsistentes.length === 0;
+  const inconsistent = response.inconsistentNodes || [];
+  const isValid = inconsistent.length === 0;
 
-  const fondo = document.createElement("div");
-  fondo.id = "modal-auditoria";
-  fondo.style.cssText = `
+  const background = document.createElement("div");
+  background.id = "modal-auditoria";
+  background.style.cssText = `
     position:fixed;inset:0;background:rgba(0,0,0,.5);
     z-index:2000;display:flex;align-items:center;justify-content:center;
   `;
 
-  fondo.innerHTML = `
+  background.innerHTML = `
     <div style="background:#fff;border-radius:12px;padding:1.5rem;
       width:480px;max-width:95vw;box-shadow:0 16px 48px rgba(0,0,0,.28);">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
@@ -903,20 +886,20 @@ function mostrarModalAuditoria(respuesta) {
         <button id="btn-cerrar-auditoria" style="border:none;background:#f3f4f6;border-radius:6px;padding:.4rem .8rem;cursor:pointer;font-weight:600;">✕</button>
       </div>
       <div style="padding:.8rem;border-radius:8px;margin-bottom:1rem;
-        background:${esValido ? "#f0fdf4" : "#fff1f2"};
-        border-left:4px solid ${esValido ? "#22c55e" : "#ef4444"};">
+        background:${isValid ? "#f0fdf4" : "#fff1f2"};
+        border-left:4px solid ${isValid ? "#22c55e" : "#ef4444"};">
         <strong>${
-          esValido
+          isValid
             ? " El árbol cumple la propiedad AVL en todos sus nodos. Nodos consistentes ( |BF| ∈ { -1, 0, 1 } )"
             : " Se encontraron nodos que violan la propiedad AVL."
         }</strong>
       </div>
       ${
-        inconsistentes.length > 0
+        inconsistent.length > 0
           ? `
         <p style="font-size:.88rem;margin-bottom:.5rem;font-weight:600;">Nodos inconsistentes ( |BF| ∉ { -1, 0, 1 } ):</p>
         <ul style="margin:0;padding-left:1.2rem;font-size:.85rem;color:#6b7280;">
-          ${inconsistentes.map((n) => `<li>${n}</li>`).join("")}
+          ${inconsistent.map((n) => `<li>${n}</li>`).join("")}
         </ul>`
           : ""
       }
@@ -928,69 +911,69 @@ function mostrarModalAuditoria(respuesta) {
     </div>
   `;
 
-  document.body.appendChild(fondo);
-  const cerrar = () => fondo.remove();
+  document.body.appendChild(background);
+  const close = () => background.remove();
   document
     .getElementById("btn-cerrar-auditoria")
-    .addEventListener("click", cerrar);
+    .addEventListener("click", close);
   document
     .getElementById("btn-aceptar-auditoria")
-    .addEventListener("click", cerrar);
-  fondo.addEventListener("click", (e) => {
-    if (e.target === fondo) cerrar();
+    .addEventListener("click", close);
+  background.addEventListener("click", (e) => {
+    if (e.target === background) close();
   });
 }
 
 // ════════════════════════════════════════════════════════════
-// RECORRIDOS
+// TRAVERSALS
 // ════════════════════════════════════════════════════════════
 
 /**
- * Obtiene los recorridos precalculados del backend y los muestra en pantalla.
- * Los algoritmos InOrder, PreOrder, PostOrder y BFS están implementados en
- * AvlTree.py — no se duplica la lógica aquí.
+ * Gets pre-calculated traversals from backend and displays them on screen.
+ * InOrder, PreOrder, PostOrder and BFS algorithms are implemented in
+ * AvlTree.py --- logic isn't duplicated here.
  */
-async function manejarRecorrido(tipo) {
+async function handleTraversal(type) {
   try {
-    const respuesta = await getMetrics();
-    const recorridos = respuesta.data.recorridos;
-    const lista = recorridos?.[tipo];
+    const response = await getMetrics();
+    const traversals = response.data.recorridos;
+    const list = traversals?.[type];
 
-    if (!lista || lista.length === 0) {
-      mostrarToast("El árbol está vacío.", "warning");
+    if (!list || list.length === 0) {
+      showToast("El árbol está vacío.", "warning");
       return;
     }
 
-    // Cada elemento de la lista es un objeto Flight; extraemos el idFlight
-    const codigos = lista.map((f) =>
+    // Each element in the list is a Flight object; we extract the idFlight
+    const codes = list.map((f) =>
       typeof f === "object" ? (f.idFlight ?? f.codigo) : f,
     );
     document.getElementById("traversal-result").innerHTML =
-      `<strong>${tipo.toUpperCase()}:</strong> ${codigos.join(" → ")}`;
+      `<strong>${type.toUpperCase()}:</strong> ${codes.join(" → ")}`;
   } catch (err) {
-    mostrarToast(`Error al obtener el recorrido: ${err.message}`, "error");
+    showToast(`Error al obtener el recorrido: ${err.message}`, "error");
   }
 }
 
 // ════════════════════════════════════════════════════════════
-// BÚSQUEDA DE VUELOS
+// FLIGHT SEARCH
 // ════════════════════════════════════════════════════════════
 
-async function manejarBusquedaVuelo() {
-  const codigo = document.getElementById("input-search-codigo").value.trim();
-  if (!codigo) {
-    mostrarToast("Ingresa un código de vuelo.", "warning");
+async function handleFlightSearch() {
+  const code = document.getElementById("input-search-codigo").value.trim();
+  if (!code) {
+    showToast("Ingresa un código de vuelo.", "warning");
     return;
   }
 
-  const resultado = document.getElementById("flight-info-result");
+  const result = document.getElementById("flight-info-result");
   const notFound = document.getElementById("flight-info-notfound");
-  resultado.classList.add("hidden");
+  result.classList.add("hidden");
   notFound.classList.add("hidden");
 
   try {
-    const respuesta = await searchFlight(codigo);
-    const f = respuesta.data;
+    const response = await searchFlight(code);
+    const f = response.data;
 
     document.getElementById("fi-codigo").textContent = f.codigo;
     document.getElementById("fi-origen").textContent = f.origen;
@@ -1008,62 +991,62 @@ async function manejarBusquedaVuelo() {
       ? "Sí ⚠"
       : "No";
 
-    // Badges de estado
+    // Status badges
     let badges = "";
     if (f.promocion) badges += `<span class="fi-badge promo">PROMO</span>`;
     if (f.alerta) badges += `<span class="fi-badge alerta">ALERTA</span>`;
     if (f.esCritico) badges += `<span class="fi-badge critico">CRÍTICO</span>`;
     document.getElementById("fi-badges").innerHTML = badges;
 
-    resultado.classList.remove("hidden");
+    result.classList.remove("hidden");
   } catch {
     notFound.classList.remove("hidden");
   }
 }
 
 // ════════════════════════════════════════════════════════════
-// MÉTRICAS
+// METRICS
 // ════════════════════════════════════════════════════════════
 
 /**
- * Actualiza el panel de métricas con los datos del backend.
+ * Updates metrics panel with backend data.
  *
- * Estructura de la respuesta:
+ * Response structure:
  *   { altura, rotaciones:{LL,RR,LR,RL}, cancelacionesMasivas, hojas, recorridos }
  *
- * Las rotaciones se muestran como totales acumulados desde que se cargó el árbol.
- * Al cargar un árbol nuevo (createTree) el backend crea un AvlTree() fresco,
- * por lo que los contadores se reinician automáticamente.
+ * Rotations are shown as cumulative totals since tree was loaded.
+ * When loading a new tree (createTree) the backend creates a fresh AvlTree(),
+ * so counters automatically reset.
  */
-async function actualizarMetricas() {
+async function updateMetrics() {
   try {
-    const respuesta = await getMetrics();
-    const m = respuesta.data;
+    const response = await getMetrics();
+    const m = response.data;
     const rot = m.rotaciones || {};
-    const totalRotaciones =
+    const totalRotations =
       (rot.LL || 0) + (rot.RR || 0) + (rot.LR || 0) + (rot.RL || 0);
 
     document.getElementById("metric-altura").textContent = m.altura ?? "-";
     document.getElementById("metric-nodos").textContent =
-      contarNodos(arbolActual);
+      countNodes(currentTree);
     document.getElementById("metric-hojas").textContent = m.hojas ?? "0";
-    document.getElementById("metric-rotaciones").textContent = totalRotaciones;
+    document.getElementById("metric-rotaciones").textContent = totalRotations;
     document.getElementById("metric-ll").textContent = rot.LL ?? "0";
     document.getElementById("metric-rr").textContent = rot.RR ?? "0";
     document.getElementById("metric-lr").textContent = rot.LR ?? "0";
     document.getElementById("metric-rl").textContent = rot.RL ?? "0";
   } catch {
-    // Las métricas son secundarias; un fallo no debe romper la UI
+    // Metrics are secondary; a failure shouldn't break the UI
   }
 }
 
-/** Cuenta el número total de nodos del árbol local. */
-function contarNodos(nodo) {
-  if (!nodo) return 0;
-  return 1 + contarNodos(nodo.izquierdo) + contarNodos(nodo.derecho);
+/** Counts the total number of tree nodes. */
+function countNodes(node) {
+  if (!node) return 0;
+  return 1 + countNodes(node.izquierdo) + countNodes(node.derecho);
 }
 
-function limpiarMetricas() {
+function clearMetrics() {
   [
     "metric-altura",
     "metric-nodos",
@@ -1080,156 +1063,153 @@ function limpiarMetricas() {
 }
 
 // ════════════════════════════════════════════════════════════
-// PROFUNDIDAD CRÍTICA
+// CRITICAL DEPTH
 // ════════════════════════════════════════════════════════════
 
-async function manejarActualizarProfundidad() {
-  const profundidad = parseInt(
-    document.getElementById("input-critical-depth").value,
-  );
-  if (isNaN(profundidad) || profundidad < 0) {
-    mostrarToast(
-      "Ingresa una profundidad válida (número entero ≥ 0).",
-      "warning",
-    );
+async function handleUpdateDepth() {
+  const depth = parseInt(document.getElementById("input-critical-depth").value);
+  if (isNaN(depth) || depth < 0) {
+    showToast("Ingresa una profundidad válida (número entero ≥ 0).", "warning");
     return;
   }
 
   try {
-    const respuesta = await setDepthLimit(profundidad);
-    arbolActual = respuesta.tree;
-    await actualizarInterfaz();
-    mostrarToast(
-      `Profundidad crítica actualizada a ${profundidad}.`,
-      "success",
-    );
+    const response = await setDepthLimit(depth);
+    currentTree = response.tree;
+    await updateUI();
+    showToast(`Profundidad crítica actualizada a ${depth}.`, "success");
   } catch (err) {
-    mostrarToast(`Error: ${err.message}`, "error");
+    showToast(`Error: ${err.message}`, "error");
   }
 }
 
 // ════════════════════════════════════════════════════════════
-// VERSIONES
+// VERSIONS
 // ════════════════════════════════════════════════════════════
 
-async function manejarGuardarVersion() {
-  const nombre = document.getElementById("input-version-name").value.trim();
-  if (!nombre) {
-    mostrarToast("Escribe un nombre para la versión.", "warning");
+async function handleSaveVersion() {
+  const name = document.getElementById("input-version-name").value.trim();
+  if (!name) {
+    showToast("Escribe un nombre para la versión.", "warning");
+    return;
+  }
+
+  if (!currentTree) {
+    showToast("Debes cargar un árbol primero.", "warning");
     return;
   }
 
   try {
-    await saveVersion(nombre);
+    await saveVersion(name);
     document.getElementById("input-version-name").value = "";
-    await actualizarListaVersiones();
-    mostrarToast(`Versión "${nombre}" guardada correctamente.`, "success");
+    await updateVersionList();
+    showToast(`Versión "${name}" guardada correctamente.`, "success");
   } catch (err) {
-    mostrarToast(`Error al guardar versión: ${err.message}`, "error");
+    showToast(`Error al guardar versión: ${err.message}`, "error");
   }
 }
 
-async function actualizarListaVersiones() {
+async function updateVersionList() {
   try {
-    const respuesta = await getVersions();
-    const lista = respuesta.data || [];
-    const contenedor = document.getElementById("version-list");
-    contenedor.innerHTML = "";
+    const response = await getVersions();
+    const list = response.data || [];
+    const container = document.getElementById("version-list");
+    container.innerHTML = "";
 
-    if (lista.length === 0) {
-      contenedor.innerHTML = `
+    if (list.length === 0) {
+      container.innerHTML = `
         <p style="font-size:.83rem;color:#9ca3af;text-align:center;margin:.5rem 0">
           Sin versiones guardadas.
         </p>`;
       return;
     }
 
-    lista.forEach((nombre) => {
-      const elemento = document.createElement("div");
-      elemento.className = "version-item";
-      elemento.innerHTML = `
-        <span class="version-name">${nombre}</span>
+    list.forEach((name) => {
+      const element = document.createElement("div");
+      element.className = "version-item";
+      element.innerHTML = `
+        <span class="version-name">${name}</span>
         <button class="btn btn-sm btn-primary" style="font-size:.78rem;padding:.3rem .6rem;">
           Cargar
         </button>
       `;
-      elemento
+      element
         .querySelector("button")
-        .addEventListener("click", () => manejarCargarVersion(nombre));
-      contenedor.appendChild(elemento);
+        .addEventListener("click", () => handleLoadVersion(name));
+      container.appendChild(element);
     });
   } catch {
-    // No es crítico
+    // it's not critical
   }
 }
 
-async function manejarCargarVersion(nombre) {
-  if (!confirm(`¿Restaurar la versión "${nombre}"?`)) return;
+async function handleLoadVersion(name) {
+  if (!confirm(`¿Restaurar la versión "${name}"?`)) return;
   try {
-    const respuesta = await loadVersion(nombre);
-    arbolActual = respuesta.data;
-    await actualizarInterfaz();
-    mostrarToast(`Versión "${nombre}" restaurada.`, "success");
+    const response = await loadVersion(name);
+    currentTree = response.data;
+    await updateUI();
+    showToast(`Versión "${name}" restaurada.`, "success");
   } catch (err) {
-    mostrarToast(`Error al cargar versión: ${err.message}`, "error");
+    showToast(`Error al cargar versión: ${err.message}`, "error");
   }
 }
 
 // ════════════════════════════════════════════════════════════
-// UTILIDADES
+// UTILITIES
 // ════════════════════════════════════════════════════════════
 
 /**
- * Activa o desactiva el estado de carga en un botón.
- * Mientras está cargando, el botón muestra el texto de carga y queda deshabilitado
- * para evitar doble clic durante la operación asíncrona.
+ * Enables or disables the charging status of a button.
+ * While charging, the button displays the charging text and is disabled.
+ * To prevent double-clicking during asynchronous operation.
  *
- * @param {HTMLButtonElement} btn   - El botón a modificar.
- * @param {boolean}           activo - True para activar, False para restaurar.
- * @param {string}            texto  - Texto a mostrar mientras carga.
+ * @param {HTMLButtonElement} btn   - The button to be modified.
+ * @param {boolean}           asset - True to activate, False to restore.
+ * @param {string}            text  - Text to display while loading.
  */
-function setLoading(btn, activo, texto) {
+function setLoading(btn, asset, text) {
   if (!btn) return;
-  if (activo) {
+  if (asset) {
     btn.dataset.textoOriginal = btn.textContent;
-    btn.textContent = texto;
+    btn.textContent = text;
     btn.disabled = true;
     btn.style.opacity = "0.7";
   } else {
-    btn.textContent = btn.dataset.textoOriginal || texto;
+    btn.textContent = btn.dataset.textoOriginal || text;
     btn.disabled = false;
     btn.style.opacity = "";
   }
 }
 
 /**
- * Muestra una notificación tipo toast en la esquina superior derecha.
- * @param {string}   mensaje            - Texto a mostrar.
- * @param {'success'|'error'|'warning'|'info'} tipo - Tipo de notificación.
- * @param {number}   [duracion=3500]    - Milisegundos antes de desaparecer.
+ * Displays a toast notification in the upper right corner.
+ * @param {string}   message            - Text to display.
+ * @param {'success'|'error'|'warning'|'info'} type - Notification type.
+ * @param {number}   [duration=3500]    - Milliseconds before it disappears.
  */
-function mostrarToast(mensaje, tipo = "info", duracion = 3500) {
-  const iconos = { success: "✓", error: "✗", warning: "⚠", info: "ℹ" };
+function showToast(message, type = "info", duration = 3500) {
+  const icons = { success: "✓", error: "✗", warning: "⚠", info: "ℹ" };
   const toast = document.createElement("div");
-  toast.className = `sky-toast ${tipo}`;
+  toast.className = `sky-toast ${type}`;
   console.log("TOAST DEFINIDO");
   toast.innerHTML = `
-    <span class="sky-toast-icon">${iconos[tipo] ?? "ℹ"}</span>
-    <span class="sky-toast-message">${mensaje}</span>
+    <span class="sky-toast-icon">${icons[type] ?? "ℹ"}</span>
+    <span class="sky-toast-message">${message}</span>
     <button class="sky-toast-close" onclick="this.parentElement.remove()">×</button>
   `;
   document.getElementById("toast-container").appendChild(toast);
-  setTimeout(() => toast.remove(), duracion);
+  setTimeout(() => toast.remove(), duration);
 }
 
 // ════════════════════════════════════════════════════════════
-// COLA DE INSERCIONES (Requerimiento 3: Simulación de Concurrencia)
+// INSERTION QUEUE (Requirement 3: Concurrency Simulation)
 // ════════════════════════════════════════════════════════════
 
 /**
- * Extrae datos del formulario y los retorna como objeto vuelo
+ * Extracts flight data from form and returns it as flight object
  */
-function obtenerDatosVueloDelFormulario() {
+function getFlightDataFromForm() {
   return {
     codigo: document.getElementById("input-codigo").value.trim(),
     origen: document.getElementById("input-origen").value.trim(),
@@ -1244,87 +1224,87 @@ function obtenerDatosVueloDelFormulario() {
 }
 
 /**
- * Maneja agregar un vuelo a la cola
+ * Handles adding a flight to the queue
  */
-async function manejarEnqueueVuelo() {
-  const vuelo = obtenerDatosVueloDelFormulario();
+async function handleEnqueueFlight() {
+  const flight = getFlightDataFromForm();
 
-  // Validaciones básicas
+  // Basic validations
   if (
-    !vuelo.codigo ||
-    !vuelo.origen ||
-    !vuelo.destino ||
-    !vuelo.pasajeros ||
-    !vuelo.precioBase
+    !flight.codigo ||
+    !flight.origen ||
+    !flight.destino ||
+    !flight.pasajeros ||
+    !flight.precioBase
   ) {
-    mostrarToast("Completa todos los campos obligatorios", "warning");
+    showToast("Completa todos los campos obligatorios", "warning");
     return;
   }
-  if (vuelo.origen === vuelo.destino) {
-    mostrarToast(
+  if (flight.origen === flight.destino) {
+    showToast(
       "El origen y el destino no pueden ser la misma ciudad.",
       "warning",
     );
     return;
   }
-  if (!vuelo.horaSalida) {
-    mostrarToast("Debes ingresar la hora de salida.", "warning");
+  if (!flight.horaSalida) {
+    showToast("Debes ingresar la hora de salida.", "warning");
     return;
   }
   try {
-    // Enviar al backend para agregarlo a la cola
-    await enqueueFlight(vuelo);
+    // Send to the backend to add it to the queue
+    await enqueueFlight(flight);
 
-    // Agregar localmente para seguimiento
-    colaVuelos.push(vuelo);
+    // Add to queue locally for tracking
+    flightQueue.push(flight);
 
-    // Actualizar UI
-    actualizarContadorCola();
-    actualizarListaCola();
-    limpiarFormulario();
+    // Update UI
+    updateQueueCounter();
+    updateQueueList();
+    clearForm();
 
-    mostrarToast(`Vuelo "${vuelo.codigo}" agregado a la cola.`, "success");
+    showToast(`Vuelo "${flight.codigo}" agregado a la cola.`, "success");
   } catch (err) {
-    mostrarToast(`Error al enqueue: ${err.message}`, "error");
+    showToast(`Error at enqueue: ${err.message}`, "error");
   }
 }
 
 /**
- * Actualiza el contador visual de la cola
+ * Updates visual counter of the queue
  */
-function actualizarContadorCola() {
-  const count = colaVuelos.length;
-  const contador = document.getElementById("queue-counter");
-  contador.textContent =
+function updateQueueCounter() {
+  const count = flightQueue.length;
+  const counter = document.getElementById("queue-counter");
+  counter.textContent =
     count === 0
       ? "0 vuelos en cola"
       : `${count} vuelo${count === 1 ? "" : "s"} en cola`;
 
-  // Habilitar/deshabilitar botones
+  // Enable/disable buttons
   document.getElementById("btn-process-queue").disabled = count === 0;
   document.getElementById("btn-clear-queue").disabled = count === 0;
 }
 
 /**
- * Actualiza la lista visual de vuelos en la cola
+ * Updates visual list of flights in the queue
  */
-function actualizarListaCola() {
+function updateQueueList() {
   const listContainer = document.getElementById("queue-list");
 
-  if (colaVuelos.length === 0) {
+  if (flightQueue.length === 0) {
     listContainer.innerHTML =
       '<p style="text-align: center; color: rgba(255,255,255,0.5); font-size: 0.9rem;">Vacío</p>';
     return;
   }
 
-  listContainer.innerHTML = colaVuelos
+  listContainer.innerHTML = flightQueue
     .map(
-      (vuelo, idx) => `
+      (flight, idx) => `
     <div style="padding: 0.4rem 0.5rem; background: rgba(255,165,0,0.15); border-radius: 3px; margin-bottom: 0.4rem; font-size: 0.85rem; border-left: 3px solid #FFA500; display: flex; justify-content: space-between; align-items: center;">
       <span>
-        <strong>#${idx + 1}:</strong> ${vuelo.codigo} (${vuelo.origen}→${vuelo.destino})
+        <strong>#${idx + 1}:</strong> ${flight.codigo} (${flight.origen}→${flight.destino})
       </span>
-      <button onclick="removerDelaCola(${idx})" style="background: #FF4444; color: white; border: none; border-radius: 3px; padding: 0.2rem 0.5rem; cursor: pointer; font-size: 0.8rem;">×</button>
+      <button onclick="removeFromQueue(${idx})" style="background: #FF4444; color: white; border: none; border-radius: 3px; padding: 0.2rem 0.5rem; cursor: pointer; font-size: 0.8rem;">×</button>
     </div>
   `,
     )
@@ -1332,188 +1312,206 @@ function actualizarListaCola() {
 }
 
 /**
- * Remueve un vuelo específico de la cola
+ * Removes a specific flight from the queue
  */
-function removerDelaCola(indice) {
-  colaVuelos.splice(indice, 1);
-  actualizarContadorCola();
-  actualizarListaCola();
-  mostrarToast("Vuelo removido de la cola.", "info");
+function removeFromQueue(index) {
+  flightQueue.splice(index, 1);
+  updateQueueCounter();
+  updateQueueList();
+  showToast("Vuelo removido de la cola.", "info");
 }
 
 /**
- * Limpia toda la cola
+ * Clears entire queue
  */
-function manejarLimpiarCola() {
-  if (colaVuelos.length === 0) {
-    mostrarToast("La cola ya está vacía.", "info");
+function handleClearQueue() {
+  if (flightQueue.length === 0) {
+    showToast("La cola ya está vacía.", "info");
     return;
   }
 
-  if (!confirm(`¿Limpiar los ${colaVuelos.length} vuelos en la cola?`)) return;
+  if (!confirm(`¿Limpiar los ${flightQueue.length} vuelos en la cola?`)) return;
 
-  colaVuelos = [];
-  actualizarContadorCola();
-  actualizarListaCola();
-  mostrarToast("Cola limpiada.", "success");
+  flightQueue = [];
+  updateQueueCounter();
+  updateQueueList();
+  showToast("Cola limpiada.", "success");
 }
 
 /**
- * Procesa la cola: envía al backend y visualiza pasos
+ * Processes the queue: sends to backend and visualizes steps
  */
-async function manejarProcesarCola() {
-  if (colaVuelos.length === 0) {
-    mostrarToast("La cola está vacía.", "warning");
+async function handleProcessQueue() {
+  if (flightQueue.length === 0) {
+    showToast("La cola está vacía.", "warning");
     return;
   }
 
-  procesandoCola = true;
-  detenerProceso = false;
+  processingQueue = true;
+  stopProcess = false;
 
   try {
-    // Mostrar panel de procesamiento
+    // Show processing panel
     document.getElementById("processing-panel").style.display = "block";
     document.getElementById("btn-process-queue").disabled = true;
     document.getElementById("btn-clear-queue").disabled = true;
     document.getElementById("btn-enqueue").disabled = true;
 
-    // Llamar al endpoint para procesar la cola
-    const respuesta = await processQueue();
+    // Call endpoint to process the queue
+    const response = await processQueue();
 
-    if (!respuesta.steps) {
+    if (!response.steps) {
       throw new Error("No se recibieron pasos del servidor");
     }
 
-    // Visualizar los pasos
-    await visualizarPasosConcurrencia(respuesta.steps);
+    // Visualize the steps
+    await visualizeConcurrencySteps(response.steps);
 
-    mostrarToast("Procesamiento de cola completado.", "success");
+    showToast("Procesamiento de cola completado.", "success");
   } catch (err) {
-    if (!detenerProceso) {
-      mostrarToast(`Error al procesar cola: ${err.message}`, "error");
+    if (!stopProcess) {
+      showToast(`Error al procesar cola: ${err.message}`, "error");
     }
   } finally {
-    procesandoCola = false;
-    detenerProceso = false;
-    colaVuelos = [];
+    processingQueue = false;
+    stopProcess = false;
+    flightQueue = [];
 
-    // Ocultar panel
+    // Hide panel
     document.getElementById("processing-panel").style.display = "none";
     document.getElementById("btn-process-queue").disabled = true;
     document.getElementById("btn-clear-queue").disabled = true;
     document.getElementById("btn-enqueue").disabled = false;
 
-    actualizarContadorCola();
-    actualizarListaCola();
+    updateQueueCounter();
+    updateQueueList();
 
-    // Recargar árbol después del procesamiento
-    await cargarArbol();
+    // When stress mode is inactive, reload the entire UI (fetches from backend)
+    // When stress mode is active, only redraw the current tree without reloading (prevents auto-balancing)
+    if (!stressModeActive) {
+      updateUI();
+    } else {
+      visualizer._resizeCanvas();
+      visualizer.draw(currentTree);
+      updateMetrics();
+      updateVersionList();
+    }
   }
 }
 
 /**
- * Detiene el procesamiento de la cola
+ * Stops the queue processing
  */
-function manejarDetenerProcesamiento() {
-  detenerProceso = true;
-  mostrarToast("Procesamiento cancelado por el usuario.", "warning");
+function handleStopProcessing() {
+  stopProcess = true;
+  showToast("Procesamiento cancelado por el usuario.", "warning");
 }
 
 /**
- * Visualiza paso a paso la inserción concurrente
- * @param {Array} steps - Array de pasos del servidor
+ * Visualizes step by step concurrent insertion
+ * @param {Array} steps - Array of steps from server
  */
-async function visualizarPasosConcurrencia(steps) {
-  for (let i = 0; i < steps.length && !detenerProceso; i++) {
+async function visualizeConcurrencySteps(steps) {
+  // Ensure canvas is visible and properly sized before drawing visualization steps
+  hideEmptyState(); // Make canvas visible and hide the empty state message
+  await new Promise((resolve) => requestAnimationFrame(resolve)); // Wait for browser layout recalculation
+  visualizer._resizeCanvas(); // Resize canvas to match container's actual dimensions
+  visualizer.resetView(); // Reset zoom and pan to initial centered view
+
+  for (let i = 0; i < steps.length && !stopProcess; i++) {
     const step = steps[i];
 
-    // Actualizar información en el panel
+    // Update information in panel
     const stepInfo = document.getElementById("step-info");
     const stepMetrics = document.getElementById("step-metrics");
 
     if (step.flight) {
-      stepInfo.textContent = `Paso ${i + 1}/${steps.length}: Insertando ${step.flight.idFlight}`;
+      stepInfo.textContent = `Step ${i + 1}/${steps.length}: Inserting ${step.flight.idFlight}`;
     } else {
-      stepInfo.textContent = `Paso ${i + 1}/${steps.length}`;
+      stepInfo.textContent = `Step ${i + 1}/${steps.length}`;
     }
 
-    // Mostrar métricas del paso
+    // Show metrics for this step
     if (step.metrics) {
-      const metricasTexto = [
-        `Altura: ${step.metrics.altura ?? "-"}`,
-        `Rotaciones: ${step.metrics.rotaciones ?? 0}`,
-        `Balance: ${step.metrics.desbalanceDetectado ? "⚠ CRÍTICO" : "✓ OK"}`,
+      const metricsText = [
+        `Height: ${step.metrics.altura ?? "-"}`,
+        `Rotations: ${step.metrics.rotaciones ?? 0}`,
+        `Balance: ${step.metrics.desbalanceDetectado ? "⚠ CRITICAL" : "✓ OK"}`,
       ].join(" | ");
-      stepMetrics.textContent = metricasTexto;
+      stepMetrics.textContent = metricsText;
     }
 
-    // Actualizar el árbol en el canvas si está disponible
+    // Update tree in canvas if available
     if (step.tree) {
-      arbolActual = step.tree;
+      currentTree = step.tree;
 
-      // Marcar nodos críticos en rojo si aplica
+      // Mark critical nodes in red if applicable
       if (step.metrics && step.metrics.desbalanceDetectado) {
-        visualizador.marcarConflictos(step.tree);
+        visualizer.markConflicts(step.tree);
       } else {
-        visualizador.draw(step.tree);
+        visualizer.draw(step.tree);
       }
     }
 
-    // Esperar antes de mostrar el siguiente paso
+    // Wait before showing next step
     if (i < steps.length - 1) {
-      await new Promise((resolve) => setTimeout(resolve, 1500)); // 1.5 segundos
+      await new Promise((resolve) => setTimeout(resolve, 1500)); // 1.5 seconds
     }
   }
 
-  // Resumen final
-  const conflictos = steps.filter(
+  // Final summary
+  const conflicts = steps.filter(
     (s) => s.metrics && s.metrics.desbalanceDetectado,
   ).length;
-  mostrarToast(
-    `Procesados: ${steps.length} pasos | Conflictos detectados: ${conflictos}`,
-    conflictos > 0 ? "warning" : "success",
-    5000,
+  showToast(
+    `Processed: ${steps.length} steps | Detected conflicts: ${conflicts}`,
+    conflicts > 0 ? "warning" : "success",
+    3000,
   );
+
+  // Update metrics with the final tree
+  await updateMetrics();
+  await updateVersionList();
 }
 
 /**
- * carga las ciudades con aeropuertos y puebla los selectores
+ * Loads cities with airports and populates selectors
  */
-async function cargarCiudades() {
+async function loadCities() {
   try {
-    const respuesta = await getCiudades();
-    const ciudades = respuesta.data.ciudades_con_aeropuerto_colombia;
-    poblarSelectCiudades(ciudades);
+    const response = await getCities();
+    const cities = response.data.ciudades_con_aeropuerto_colombia;
+    populateCitySelects(cities);
   } catch (error) {
     console.error("Error al obtener las ciudades:", error);
   }
 }
 
 /**
- * Puebla los selectores de origen y destino con las ciudades disponibles
+ * Populates origin and destination selectors with available cities
  */
-function poblarSelectCiudades(ciudades) {
+function populateCitySelects(cities) {
   const selectOrigen = document.getElementById("input-origen");
   const selectDestino = document.getElementById("input-destino");
 
   if (!selectOrigen || !selectDestino) return;
 
-  // Limpiar opciones existentes (mantener la opción disabled select)
+  // Clear existing options (keep disabled select option)
   selectOrigen.innerHTML =
     '<option value="" disabled selected>Selecciona Origen</option>';
   selectDestino.innerHTML =
     '<option value="" disabled selected>Selecciona Destino</option>';
 
-  // Añadir las ciudades como opciones
-  ciudades.forEach((ciudad) => {
+  // Add the cities as options
+  cities.forEach((city) => {
     const optionOrigen = document.createElement("option");
-    optionOrigen.value = ciudad;
-    optionOrigen.textContent = ciudad;
+    optionOrigen.value = city;
+    optionOrigen.textContent = city;
     selectOrigen.appendChild(optionOrigen);
 
     const optionDestino = document.createElement("option");
-    optionDestino.value = ciudad;
-    optionDestino.textContent = ciudad;
+    optionDestino.value = city;
+    optionDestino.textContent = city;
     selectDestino.appendChild(optionDestino);
   });
 }

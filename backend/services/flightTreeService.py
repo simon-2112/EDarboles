@@ -208,8 +208,11 @@ class TreeService:
             "derecho": self.nodeToJson(node.getRightChild()),
         }
 
-    def getTreeJson(self):
+    def getAvlTreeJson(self):
         return self.nodeToJson(self.avl.root)
+
+    def getBstTreeJson(self):
+        return self.nodeToJson(self.bst.root)
 
     # does the same that getTreeJson method..??
     def exportTree(self):
@@ -217,6 +220,8 @@ class TreeService:
 
     # this part is to save a version (version button with the name version).
     def saveVersion(self, name):
+        if not self.avl.root:
+            raise Exception("No tree loaded")
         self.versionService.saveVersion(name, self.avl)
 
     def loadVersion(self, name):

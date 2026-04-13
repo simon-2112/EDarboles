@@ -1,161 +1,161 @@
 /**
- * Cliente API para comunicarse con el backend Flask (AVL)
+ *  Client API for communication with the Flask backend (AVL)
  */
 
 const API_BASE_URL = "http://localhost:5000/api/tree";
 
 /**
- * Función base para peticiones HTTP
+ * Function base for HTTP requests
  */
-async function apiFetch(endpoint, metodo = "GET", datos = null) {
-  const opciones = {
-    method: metodo,
+async function apiFetch(endpoint, method = "GET", data = null) {
+  const options = {
+    method: method,
     headers: { "Content-Type": "application/json" },
   };
 
-  if (datos) opciones.body = JSON.stringify(datos);
+  if (data) options.body = JSON.stringify(data);
 
-  const respuesta = await fetch(`${API_BASE_URL}${endpoint}`, opciones);
-  const resultado = await respuesta.json();
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+  const result = await response.json();
 
-  if (!respuesta.ok) {
-    throw new Error(resultado.message || `Error ${respuesta.status}`);
+  if (!response.ok) {
+    throw new Error(result.message || `Error ${response.status}`);
   }
 
-  return resultado;
+  return result;
 }
 
-// ─────────────── Árbol AVL ───────────────
+// ─────────────── Tree AVL ───────────────
 
-/** Obtiene el árbol */
+/** Get the tree */
 async function getTree() {
   return apiFetch("");
 }
 
-/** trae las ciudades con aeropuertos */
-async function getCiudades() {
-  return apiFetch("/ciudades", "GET");
+/** brings cities with airports */
+async function getCities() {
+  return apiFetch("/cities", "GET");
 }
 
-/** Crea o carga un árbol */
-async function createTree(datos) {
-  return apiFetch("/create", "POST", datos);
+/** Create or load a tree */
+async function createTree(data) {
+  return apiFetch("/create", "POST", data);
 }
 
-/** Inserta un vuelo */
-async function insertFlight(vuelo) {
-  return apiFetch("/insert", "POST", vuelo);
+/** Insert a flight */
+async function insertFlight(flight) {
+  return apiFetch("/insert", "POST", flight);
 }
 
-/** Busca un vuelo por código */
-async function searchFlight(codigo) {
-  return apiFetch(`/search/${codigo}`);
+/** Search for a flight by code */
+async function searchFlight(code) {
+  return apiFetch(`/search/${code}`);
 }
 
-/** Elimina un vuelo */
-async function deleteFlight(codigo) {
-  return apiFetch(`/delete/${codigo}`, "DELETE");
+/** Delete a flight */
+async function deleteFlight(code) {
+  return apiFetch(`/delete/${code}`, "DELETE");
 }
 
-/** Actualiza un vuelo */
-async function updateFlight(codigoOriginal, vuelo) {
-  return apiFetch(`/update/${codigoOriginal}`, "PUT", vuelo);
+/** Update a flight */
+async function updateFlight(codeOriginal, flight) {
+  return apiFetch(`/update/${codeOriginal}`, "PUT", flight);
 }
 
-/** Cancela un nodo y su subárbol */
-async function cancelSubtree(codigo) {
-  return apiFetch(`/cancel/${codigo}`, "DELETE");
+/** Cancel a node and its subtree */
+async function cancelSubtree(code) {
+  return apiFetch(`/cancel/${code}`, "DELETE");
 }
 
-/** Reinicia el árbol */
+/** Reset the tree */
 async function resetTree() {
   return apiFetch("/reset", "DELETE");
 }
 
-// ─────────────── Historial ───────────────
+// ─────────────── History ───────────────
 
-/** Deshace la última acción */
+/** Undo the last action */
 async function undoAction() {
   return apiFetch("/undo", "POST");
 }
 
-// ─────────────── Exportación ───────────────
+// ─────────────── Export ───────────────
 
-/** Exporta el árbol */
+/** Export the tree */
 async function exportTree() {
   return apiFetch("/export");
 }
 
-// ─────────────── Versiones ───────────────
+// ─────────────── Versions ───────────────
 
-/** Guarda una versión */
-async function saveVersion(nombre) {
-  return apiFetch("/version/save", "POST", { name: nombre });
+/** save a version */
+async function saveVersion(name) {
+  return apiFetch("/version/save", "POST", { name: name });
 }
 
-/** Carga una versión */
-async function loadVersion(nombre) {
-  return apiFetch(`/version/load/${nombre}`, "POST");
+/** load a version */
+async function loadVersion(name) {
+  return apiFetch(`/version/load/${name}`, "POST");
 }
 
-/** Lista versiones */
+/** List versions */
 async function getVersions() {
   return apiFetch("/version");
 }
 
-// ─────────────── Cola ───────────────
+// ─────────────── Queue ───────────────
 
-/** Encola un vuelo */
-async function enqueueFlight(vuelo) {
-  return apiFetch("/queue/enqueue", "POST", vuelo);
+/** Enqueue a flight  */
+async function enqueueFlight(flight) {
+  return apiFetch("/queue/enqueue", "POST", flight);
 }
 
-/** Procesa la cola */
+/** Process the queue */
 async function processQueue() {
   return apiFetch("/queue/process", "POST");
 }
 
-// ─────────────── Métricas ───────────────
+// ─────────────── Métrics ───────────────
 
-/** Obtiene métricas */
+/** Get metrics */
 async function getMetrics() {
   return apiFetch("/metrics");
 }
 
-// ─────────────── Modo estrés ───────────────
+// ─────────────── Mode Stress ───────────────
 
-/** Activa modo estrés */
+/** Activate stress mode */
 async function activateStress() {
   return apiFetch("/stress/activate", "POST");
 }
 
-/** Desactiva modo estrés y rebalancea */
+/** Deactivate stress mode and rebalance */
 async function deactivateStress() {
   return apiFetch("/stress/desactivate", "POST");
 }
 
-/** Rebalanceo manual en estrés */
+/** Manual rebalancing in stress */
 async function rebalanceStress() {
   return apiFetch("/stress/rebalance", "POST");
 }
 
-// ─────────────── Penalización ───────────────
+// ─────────────── Penalty ───────────────
 
-/** Define límite de profundidad */
-async function setDepthLimit(limite) {
-  return apiFetch("/penalty/setDepthLimit", "POST", { limit: limite });
+/** Define depth limit */
+async function setDepthLimit(limit) {
+  return apiFetch("/penalty/setDepthLimit", "POST", { limit: limit });
 }
 
-// ─────────────── Auditoría ───────────────
+// ─────────────── Auditory ───────────────
 
-/** Verifica propiedades AVL */
+/** Check AVL properties */
 async function auditAVL() {
   return apiFetch("/auditory");
 }
 
-// ─────────────── Rentabilidad ───────────────
+// ─────────────── Profit ───────────────
 
-/** Elimina el vuelo menos rentable */
+/** Eliminate the least profitable flight */
 async function deleteLowestProfit() {
   return apiFetch("/profit/deleteLowest", "POST");
 }

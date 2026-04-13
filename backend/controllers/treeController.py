@@ -27,7 +27,7 @@ stressService = StressService(service)
 @tree_bp.route("", methods=["GET"])
 def get_tree():
     try:
-        result = service.getTreeJson()
+        result = service.getAvlTreeJson()
 
         return jsonify({"status": "success", "data": result}), 200
 
@@ -35,18 +35,18 @@ def get_tree():
         return jsonify({"status": "error", "message": str(e)}), 400
 
 
-# ciudades con aeropuerto
-@tree_bp.route("/ciudades", methods=["GET"])
-def get_ciudades():
+# cities  with airports
+@tree_bp.route("/cities", methods=["GET"])
+def get_cities():
     try:
-        ciudades = (
+        cities = (
             Path(__file__).resolve().parent.parent
             / "data"
             / "ciudadesConAeropuerto.json"
         )
-        datos = readJson(ciudades)
+        data = readJson(cities)
 
-        return jsonify({"status": "success", "data": datos}), 200
+        return jsonify({"status": "success", "data": data}), 200
 
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 400
@@ -59,9 +59,13 @@ def create_tree():
     try:
         service.createTree(data)
 
-        result = service.getTreeJson()
+        resultAvl = service.getAvlTreeJson()
+        resultBst = service.getBstTreeJson()  # for comparison with AVL
 
-        return jsonify({"status": "success", "data": result}), 201
+        return (
+            jsonify({"status": "success", "data": resultAvl, "dataBst": resultBst}),
+            201,
+        )
 
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 400
@@ -83,7 +87,7 @@ def cancel_subtree(flightCode):
                 404,
             )
 
-        result = service.getTreeJson()
+        result = service.getAvlTreeJson()
 
         return (
             jsonify(
@@ -124,7 +128,7 @@ def insert_flight():
                 {
                     "status": "success",
                     "message": "Flight inserted",
-                    "data": service.getTreeJson(),
+                    "data": service.getAvlTreeJson(),
                 }
             ),
             201,
@@ -156,7 +160,7 @@ def delete_flight(flightCode):
                     {
                         "status": "success",
                         "message": "Flight deleted",
-                        "data": service.getTreeJson(),
+                        "data": service.getAvlTreeJson(),
                     }
                 ),
                 200,
@@ -179,7 +183,7 @@ def update_flight(flightCode):
         if not deleted:
             return jsonify({"status": "error", "message": "Flight not found"}), 404
 
-        # insertar nuevo
+        # insert new
         flight = Flight(
             idFlight=data["codigo"],
             departureCity=data["origen"],
@@ -199,7 +203,7 @@ def update_flight(flightCode):
                 {
                     "status": "success",
                     "message": "Flight updated",
-                    "data": service.getTreeJson(),
+                    "data": service.getAvlTreeJson(),
                 }
             ),
             200,
@@ -234,7 +238,7 @@ def undo():
                     {
                         "status": "success",
                         "message": "Undo successful",
-                        "data": service.getTreeJson(),
+                        "data": service.getAvlTreeJson(),
                     }
                 ),
                 200,
@@ -293,7 +297,7 @@ def load_version(name):
                     {
                         "status": "success",
                         "message": f"Version '{name}' loaded",
-                        "data": service.getTreeJson(),
+                        "data": service.getAvlTreeJson(),
                     }
                 ),
                 200,
@@ -390,7 +394,7 @@ def deactivate_stress():
                     "data": {
                         "stressMode": False,
                         "rebalance": result,
-                        "tree": service.getTreeJson(),
+                        "tree": service.getAvlTreeJson(),
                     },
                 }
             ),
@@ -434,7 +438,7 @@ def set_depth_limit():
                     "status": "success",
                     "message": f"Depth limit set to {limit}",
                     "depthLimit": limit,
-                    "tree": service.getTreeJson(),  # ya incluye isCritical en nodeToJson
+                    "tree": service.getAvlTreeJson(),
                 }
             ),
             200,
@@ -459,7 +463,7 @@ def apply_penalty():
                 {
                     "status": "success",
                     "message": "Penalty applied according to current depth limit",
-                    "tree": service.getTreeJson(),
+                    "tree": service.getAvlTreeJson(),
                 }
             ),
             200,
@@ -473,9 +477,9 @@ def apply_penalty():
 @tree_bp.route("/auditory", methods=["GET"])
 def audit_avl():
     """
-    Verifica las propiedades AVL del árbol en modo estrés.
-    Retorna un reporte detallado de cada nodo y lista de nodos inconsistentes.
-    Solo funciona si stressMode está activo.
+    Check the AVL properties of the tree in stress mode.
+    Returns a detailed report for each node and a list of inconsistent nodes.
+    Only works if StressMode is enabled.
     """
     try:
         result = service.getAuditAVL()
@@ -500,10 +504,10 @@ def audit_avl():
 @tree_bp.route("/profit/deleteLowest", methods=["POST"])
 def delete_lowest_profit():
     """
-    Elimina el vuelo de menor rentabilidad según reglas de negocio:
-    - rentabilidad = pasajeros * precioFinal - promoción - penalización
-    - desempates por profundidad y código
-    - cancela toda la subrama
+    Eliminate the least profitable flight according to business rules:
+    - Profitability = Passengers * Final Price - Promotion - Penalty
+    - Tiebreakers based on depth and code
+    - Cancel the entire sub-branch
     """
     try:
         flight_code = service.deleteLowestProfitFlight()
@@ -514,7 +518,7 @@ def delete_lowest_profit():
                     {
                         "status": "warning",
                         "message": "There are not Flights",
-                        "tree": service.getTreeJson(),
+                        "tree": service.getAvlTreeJson(),
                     }
                 ),
                 200,
@@ -525,7 +529,7 @@ def delete_lowest_profit():
                 {
                     "status": "success",
                     "message": f"Flight cancel: {flight_code}",
-                    "tree": service.getTreeJson(),
+                    "tree": service.getAvlTreeJson(),
                 }
             ),
             200,
